@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>کلینیک طلا — داشبورد زنده</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#faf7f0;
+  --surface:#ffffff;
+  --surface-2:#f3ede0;
+  --border:#e5dcc6;
+  --text:#22190f;
+  --muted:#7a6f5a;
+  --accent:#a9822a;
+  --accent-2:#c9a43d;
+  --up:#8a6d1f;
+  --up-bg:#f7ecc9;
+  --down:#8a3b2b;
+  --down-bg:#f6e2da;
+  --live:#3b7a4a;
+  --live-bg:#e3f0e5;
+  --err:#a13b3b;
+  --err-bg:#f8e4e4;
+  --shadow: 0 1px 2px rgba(40,30,10,.06), 0 8px 24px rgba(40,30,10,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15120c;
+    --surface:#1c1712;
+    --surface-2:#221b13;
+    --border:#332a1c;
+    --text:#f2ead9;
+    --muted:#a8977c;
+    --accent:#d9b04c;
+    --accent-2:#e6c46c;
+    --up:#e0c069;
+    --up-bg:#332a15;
+    --down:#e0836b;
+    --down-bg:#3a2117;
+    --live:#7fce93;
+    --live-bg:#193322;
+    --err:#e6867a;
+    --err-bg:#3a1c1c;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 30px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Vazirmatn","Segoe UI",Tahoma,sans-serif;
+  font-variant-numeric:tabular-nums;
+  min-height:100vh;
+}
+#app{max-width:1080px;margin:0 auto;padding:28px 20px 60px;overflow-x:hidden;}
+a{color:inherit;}
+img,svg{max-width:100%;}
+
+.header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:22px;}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-mark{width:44px;height:44px;border-radius:12px;background:linear-gradient(155deg,var(--accent-2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:20px;color:#241a06;flex:none;box-shadow:var(--shadow);}
+.brand-text h1{margin:0;font-size:19px;font-weight:800;letter-spacing:.2px;}
+.brand-text p{margin:2px 0 0;font-size:12.5px;color:var(--muted);}
+.brand-text a{text-decoration:none;border-bottom:1px dashed var(--muted);}
+
+.status{display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-size:12.5px;color:var(--muted);}
+.status .row{display:flex;align-items:center;gap:8px;}
+.livebadge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--live-bg);color:var(--live);}
+.livebadge .pulse{width:7px;height:7px;border-radius:50%;background:var(--live);animation:pulse 1.6s infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--live) 55%, transparent);}70%{box-shadow:0 0 0 7px transparent;}100%{box-shadow:0 0 0 0 transparent;}}
+@media (prefers-reduced-motion: reduce){.livebadge .pulse{animation:none;}}
+.refresh-btn{font-family:inherit;font-size:11.5px;padding:4px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);cursor:pointer;}
+.refresh-btn:hover{border-color:var(--accent);}
+.refresh-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+.errbar{display:none;background:var(--err-bg);color:var(--err);border:1px solid var(--err);border-radius:12px;padding:10px 14px;font-size:12.5px;margin-bottom:18px;}
+.errbar.show{display:block;}
+
+.hero{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:26px;min-width:0;}
+@media (max-width:760px){.hero{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:420px){.hero{grid-template-columns:1fr;}}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 16px 14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px;min-width:0;}
+.stat .label{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;}
+.stat .value{font-size:22px;font-weight:800;letter-spacing:.2px;}
+.stat .sub{font-size:12.5px;color:var(--muted);}
+.chip{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;}
+.chip.up{color:var(--up);background:var(--up-bg);}
+.chip.down{color:var(--down);background:var(--down-bg);}
+
+section{margin-bottom:28px;}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;gap:12px;}
+.section-head h2{font-size:15px;margin:0;font-weight:700;}
+.section-head .hint{font-size:12px;color:var(--muted);}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;}
+.grid-rows{display:flex;flex-direction:column;}
+.grid-rows .r{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px;align-items:center;padding:13px 18px;border-bottom:1px solid var(--border);min-width:0;}
+.grid-rows .r .name,.grid-rows .r .toman,.grid-rows .r .usd{min-width:0;overflow:hidden;text-overflow:ellipsis;}
+@media (max-width:420px){.grid-rows .r,.grid-rows .head{grid-template-columns:1fr 1fr;} .grid-rows .r .usd,.grid-rows .head span:last-child{display:none;}}
+.grid-rows .r:last-child{border-bottom:none;}
+.grid-rows .r .name{font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px;}
+.grid-rows .r .name .dotc{width:8px;height:8px;border-radius:2px;background:var(--accent-2);flex:none;}
+.grid-rows .r .toman{font-size:14px;font-weight:700;text-align:left;}
+.grid-rows .r .usd{font-size:12.5px;color:var(--muted);text-align:left;}
+.grid-rows .head{padding:10px 18px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border);display:grid;grid-template-columns:1.3fr 1fr 1fr;background:var(--surface-2);}
+.grid-rows .head span{text-align:left;}
+.grid-rows .head span:first-child{text-align:right;}
+
+table.coins{width:100%;border-collapse:collapse;font-size:13px;}
+table.coins th{text-align:left;font-size:11px;color:var(--muted);font-weight:600;padding:10px 14px;background:var(--surface-2);border-bottom:1px solid var(--border);white-space:nowrap;}
+table.coins th:first-child,table.coins td:first-child{text-align:right;}
+table.coins td{padding:12px 14px;border-bottom:1px solid var(--border);white-space:nowrap;}
+table.coins tr:last-child td{border-bottom:none;}
+table.coins td.name{font-weight:600;}
+table.coins td.num{text-align:left;}
+.table-wrap{overflow-x:auto;}
+.bubble-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;}
+
+.methodology{background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:16px 18px;font-size:12.5px;color:var(--muted);line-height:2;}
+.methodology b{color:var(--text);}
+.methodology ul{margin:8px 0 0;padding-inline-start:20px;}
+
+.skel{color:var(--muted);}
+footer{margin-top:30px;font-size:11.5px;color:var(--muted);text-align:center;line-height:1.9;}
+footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="brand">
+      <div class="brand-mark">◈</div>
+      <div class="brand-text">
+        <h1>داشبورد زنده‌ی طلا و سکه</h1>
+        <p>منبع داده: <a href="https://www.tgju.org/" target="_blank" rel="noopener">tgju.org</a></p>
+      </div>
+    </div>
+    <div class="status">
+      <div class="row">
+        <span class="livebadge"><span class="pulse"></span> زنده</span>
+        <button class="refresh-btn" id="refreshBtn">به‌روزرسانی</button>
+      </div>
+      <div class="row" id="updatedRow">در حال دریافت داده…</div>
+    </div>
+  </div>
+
+  <div class="errbar" id="errBar"></div>
+
+  <div class="hero" id="hero"></div>
+
+  <section>
+    <div class="section-head">
+      <h2>طلا، نقره و مظنه</h2>
+      <span class="hint" id="usdHint"></span>
+    </div>
+    <div class="card grid-rows" id="goldTable"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>ارزها</h2>
+      <span class="hint">نرخ صرافی، برحسب تومان</span>
+    </div>
+    <div class="card grid-rows" id="fxTable"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>سکه‌ها و حباب</h2>
+      <span class="hint">حباب = (قیمت بازار − ارزش ذاتی طلای خالص) ÷ ارزش ذاتی</span>
+    </div>
+    <div class="card table-wrap">
+      <table class="coins" id="coinsTable"></table>
+    </div>
+  </section>
+
+  <section>
+    <div class="methodology">
+      <b>مبنای محاسبه</b>
+      <ul>
+        <li>عیار سکه امامی، بهار آزادی (طرح قدیم)، نیم و ربع: <b>۹۰۰ در هزار</b> — طلای خالص = وزن ناخالص × ۰٫۹۰۰.</li>
+        <li>وزن ناخالص: امامی/طرح قدیم ۸٫۱۳۵۹۸ گرم، نیم ۴٫۰۶۶۵ گرم، ربع ۲٫۰۳۳۲۵ گرم، گرمی ۱٫۰۱ گرم.</li>
+        <li>حباب هر سکه بر مبنای <b>وزن طلای خالص واقعی</b> ضرب‌در قیمت هر گرم طلای ۲۴ عیار محاسبه می‌شود، نه وزن ناخالص.</li>
+        <li>مقادیر tgju.org به ریال است و پیش از محاسبه بر ۱۰ تقسیم شده تا به تومان تبدیل شود.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    این صفحه هر بار که بازش کنی، مستقیماً از مرورگر خودت به tgju.org وصل می‌شه و آخرین قیمت‌ها رو می‌کشه (و هر ۴۵ ثانیه هم خودکار به‌روز می‌شه) · صرفاً جهت اطلاع‌رسانی، نه توصیه سرمایه‌گذاری
+  </footer>
+</div>
+
+<script>
+const OUNCE_G = 31.1034768;
+const REFRESH_MS = 45000;
+const API_URL = "https://call2.tgju.org/ajax.json";
+
+const COIN_DEFS = [
+  { key:"rob",       name:"ربع سکه",              apiKey:"rob",    grossW:2.03325, pureW:1.8305955 },
+  { key:"nim",        name:"نیم سکه",              apiKey:"nim",    grossW:4.0665,  pureW:3.661191 },
+  { key:"emami_new",  name:"سکه امامی (طرح جدید)", apiKey:"sekee",  grossW:8.13598, pureW:7.322382 },
+  { key:"emami_old",  name:"بهار آزادی (طرح قدیم)", apiKey:"sekeb",  grossW:8.13598, pureW:7.322382 },
+  { key:"gerami",     name:"سکه یک گرمی",          apiKey:"gerami", grossW:1.01,    pureW:0.909 },
+];
+
+function toNum(s){ return parseFloat(String(s).replace(/,/g,"").trim()); }
+function fmtToman(n){ return Math.round(n).toLocaleString("fa-IR"); }
+function fmtUsd(n){ return n.toLocaleString("en-US",{maximumFractionDigits: n>=100?0:2}); }
+function fmtPct(n){ const s = n>=0? "+":""; return s+n.toLocaleString("fa-IR",{maximumFractionDigits:2,minimumFractionDigits:2}); }
+
+function parseData(json){
+  const cur = json.current;
+  const rial = k => toNum(cur[k].p);
+  const usdToman = rial("price_dollar_rl")/10;
+  const eurToman = rial("price_eur")/10;
+  const aedToman = rial("price_aed")/10;
+  const gram18Toman = rial("geram18")/10;
+  const gram24Toman = rial("geram24")/10;
+  const ounceUsd = toNum(cur.ons.p);
+  const silverOunceUsd = toNum(cur.silver.p);
+  const meshgalToman = rial("mesghal")/10;
+
+  const coins = COIN_DEFS.map(c => ({...c, marketToman: rial(c.apiKey)/10}));
+
+  return { usdToman, eurToman, aedToman, gram18Toman, gram24Toman, ounceUsd, silverOunceUsd, meshgalToman, coins };
+}
+
+function compute(d){
+  const gram24Usd = d.gram24Toman/d.usdToman;
+  const gram18Usd = d.gram18Toman/d.usdToman;
+  const worldGram24Usd = d.ounceUsd/OUNCE_G;
+  const diffPct = (gram24Usd-worldGram24Usd)/worldGram24Usd*100;
+  const meshgalUsd = d.meshgalToman/d.usdToman;
+  const eurUsd = d.eurToman/d.usdToman;
+  const aedUsd = d.aedToman/d.usdToman;
+  const coins = d.coins.map(c=>{
+    const intrinsicToman = c.pureW * d.gram24Toman;
+    const bubblePct = (c.marketToman-intrinsicToman)/intrinsicToman*100;
+    return {...c, marketUsd: c.marketToman/d.usdToman, intrinsicToman, bubblePct};
+  });
+  return { gram24Usd, gram18Usd, worldGram24Usd, diffPct, meshgalUsd, eurUsd, aedUsd, coins };
+}
+
+function render(d, c, fetchedAt){
+  document.getElementById("hero").innerHTML = `
+    <div class="stat">
+      <div class="label">طلای ۱۸ عیار (هر گرم)</div>
+      <div class="value">${fmtToman(d.gram18Toman)} <span style="font-size:12px;font-weight:600;color:var(--muted)">تومان</span></div>
+      <div class="sub">≈ ${fmtUsd(c.gram18Usd)} $</div>
+    </div>
+    <div class="stat">
+      <div class="label">طلای ۲۴ عیار (هر گرم)</div>
+      <div class="value">${fmtToman(d.gram24Toman)} <span style="font-size:12px;font-weight:600;color:var(--muted)">تومان</span></div>
+      <div class="sub">≈ ${fmtUsd(c.gram24Usd)} $</div>
+    </div>
+    <div class="stat">
+      <div class="label">انس جهانی طلا</div>
+      <div class="value">${fmtUsd(d.ounceUsd)} $</div>
+      <div class="sub">هر گرم جهانی ≈ ${fmtUsd(c.worldGram24Usd)} $</div>
+    </div>
+    <div class="stat">
+      <div class="label">اختلاف طلای ایران با جهان<span class="chip ${c.diffPct>=0?'up':'down'}">${fmtPct(c.diffPct)}٪</span></div>
+      <div class="value">${c.diffPct>=0?"گران‌تر":"ارزان‌تر"}</div>
+      <div class="sub">مبنا: قیمت هر گرم ۲۴ عیار (دلاری)</div>
+    </div>
+  `;
+
+  document.getElementById("usdHint").textContent = `نرخ پایه دلار: ${fmtToman(d.usdToman)} تومان`;
+
+  document.getElementById("goldTable").innerHTML = `
+    <div class="head"><span>آیتم</span><span>تومان</span><span>دلار</span></div>
+    <div class="r"><div class="name"><span class="dotc"></span> گرم ۱۸ عیار (تهران)</div><div class="toman">${fmtToman(d.gram18Toman)}</div><div class="usd">${fmtUsd(c.gram18Usd)} $</div></div>
+    <div class="r"><div class="name"><span class="dotc"></span> گرم ۲۴ عیار</div><div class="toman">${fmtToman(d.gram24Toman)}</div><div class="usd">${fmtUsd(c.gram24Usd)} $</div></div>
+    <div class="r"><div class="name"><span class="dotc"></span> مظنه تهران (مثقال)</div><div class="toman">${fmtToman(d.meshgalToman)}</div><div class="usd">${fmtUsd(c.meshgalUsd)} $</div></div>
+    <div class="r"><div class="name"><span class="dotc"></span> انس جهانی طلا</div><div class="toman">—</div><div class="usd">${fmtUsd(d.ounceUsd)} $</div></div>
+    <div class="r"><div class="name"><span class="dotc"></span> انس جهانی نقره</div><div class="toman">—</div><div class="usd">${fmtUsd(d.silverOunceUsd)} $</div></div>
+  `;
+
+  document.getElementById("fxTable").innerHTML = `
+    <div class="head"><span>ارز</span><span>تومان</span><span>معادل دلاری</span></div>
+    <div class="r"><div class="name"><span class="dotc"></span> دلار آمریکا</div><div class="toman">${fmtToman(d.usdToman)}</div><div class="usd">۱٫۰۰ $ (پایه)</div></div>
+    <div class="r"><div class="name"><span class="dotc"></span> یورو</div><div class="toman">${fmtToman(d.eurToman)}</div><div class="usd">${fmtUsd(c.eurUsd)} $</div></div>
+    <div class="r"><div class="name"><span class="dotc"></span> درهم امارات</div><div class="toman">${fmtToman(d.aedToman)}</div><div class="usd">${fmtUsd(c.aedUsd)} $</div></div>
+  `;
+
+  document.getElementById("coinsTable").innerHTML = `
+    <thead><tr><th>نوع سکه</th><th>قیمت بازار (تومان)</th><th>معادل دلاری</th><th>ارزش ذاتی (تومان)</th><th>حباب</th></tr></thead>
+    <tbody>
+      ${c.coins.map(co=>`
+        <tr>
+          <td class="name">${co.name}</td>
+          <td class="num">${fmtToman(co.marketToman)}</td>
+          <td class="num">${fmtUsd(co.marketUsd)} $</td>
+          <td class="num">${fmtToman(co.intrinsicToman)}</td>
+          <td class="num"><span class="bubble-chip ${co.bubblePct>=0?'up':'down'}">${fmtPct(co.bubblePct)}٪</span></td>
+        </tr>
+      `).join("")}
+    </tbody>
+  `;
+
+  document.getElementById("updatedRow").textContent =
+    `آخرین دریافت: ${fetchedAt.toLocaleTimeString("fa-IR")} — ${fetchedAt.toLocaleDateString("fa-IR-u-ca-persian",{day:"numeric",month:"long",year:"numeric"})}`;
+}
+
+function showError(msg){
+  const bar = document.getElementById("errBar");
+  bar.textContent = msg;
+  bar.classList.add("show");
+}
+function clearError(){
+  document.getElementById("errBar").classList.remove("show");
+}
+
+let inFlight = false;
+async function refresh(){
+  if (inFlight) return;
+  inFlight = true;
+  try{
+    const res = await fetch(API_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const json = await res.json();
+    const d = parseData(json);
+    const c = compute(d);
+    render(d, c, new Date());
+    clearError();
+  }catch(err){
+    showError("دریافت داده از tgju.org ناموفق بود (" + err.message + "). آخرین داده‌ی موجود همچنان نمایش داده می‌شود. چند لحظه دیگر دوباره امتحان می‌شود.");
+  }finally{
+    inFlight = false;
+  }
+}
+
+document.getElementById("refreshBtn").addEventListener("click", refresh);
+refresh();
+setInterval(refresh, REFRESH_MS);
+</script>
+</body>
+</html>
