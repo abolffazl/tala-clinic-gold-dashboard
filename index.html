@@ -25,6 +25,8 @@
   --live-bg:#e3f0e5;
   --err:#a13b3b;
   --err-bg:#f8e4e4;
+  --warn:#8a5a1f;
+  --warn-bg:#f7e6c9;
   --shadow: 0 1px 2px rgba(40,30,10,.06), 0 8px 24px rgba(40,30,10,.06);
 }
 :root{color-scheme:light;}
@@ -58,8 +60,10 @@ img,svg{max-width:100%;}
 .refresh-btn:hover{border-color:var(--accent);}
 .refresh-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 
-.errbar{display:none;background:var(--err-bg);color:var(--err);border:1px solid var(--err);border-radius:12px;padding:10px 14px;font-size:12.5px;margin-bottom:18px;}
+.errbar{display:none;background:var(--err-bg);color:var(--err);border:1px solid var(--err);border-radius:12px;padding:10px 14px;font-size:12.5px;margin-bottom:14px;}
 .errbar.show{display:block;}
+.warnbar{display:none;background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn);border-radius:12px;padding:10px 14px;font-size:12.5px;margin-bottom:18px;line-height:1.9;}
+.warnbar.show{display:block;}
 
 .hero{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:26px;min-width:0;}
 @media (max-width:760px){.hero{grid-template-columns:repeat(2,1fr);}}
@@ -73,9 +77,10 @@ img,svg{max-width:100%;}
 .chip.down{color:var(--down);background:var(--down-bg);}
 
 section{margin-bottom:28px;}
-.section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;gap:12px;}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap;}
 .section-head h2{font-size:15px;margin:0;font-weight:700;}
 .section-head .hint{font-size:12px;color:var(--muted);}
+.section-head .hint.stale{color:var(--warn);font-weight:600;}
 
 .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;}
 .grid-rows{display:flex;flex-direction:column;}
@@ -98,8 +103,10 @@ table.coins td{padding:12px 14px;border-bottom:1px solid var(--border);white-spa
 table.coins tr:last-child td{border-bottom:none;}
 table.coins td.name{font-weight:600;}
 table.coins td.num{text-align:left;}
+table.coins tr.base td{background:var(--surface-2);}
 .table-wrap{overflow-x:auto;}
 .bubble-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;}
+.bubble-chip.base{color:var(--muted);background:var(--surface-2);}
 
 .methodology{background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:16px 18px;font-size:12.5px;color:var(--muted);line-height:2;}
 .methodology b{color:var(--text);}
@@ -130,6 +137,7 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
   </div>
 
   <div class="errbar" id="errBar"></div>
+  <div class="warnbar" id="warnBar"></div>
 
   <div class="hero" id="hero"></div>
 
@@ -151,6 +159,16 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
 
   <section>
     <div class="section-head">
+      <h2>حباب دلار</h2>
+      <span class="hint">اختلاف نسبت به دلار تهران (بازار آزاد)</span>
+    </div>
+    <div class="card table-wrap">
+      <table class="coins" id="dollarTable"></table>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
       <h2>سکه‌ها و حباب</h2>
       <span class="hint">حباب = (قیمت بازار − ارزش ذاتی طلای خالص) ÷ ارزش ذاتی</span>
     </div>
@@ -166,6 +184,7 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
         <li>عیار سکه امامی، بهار آزادی (طرح قدیم)، نیم و ربع: <b>۹۰۰ در هزار</b> — طلای خالص = وزن ناخالص × ۰٫۹۰۰.</li>
         <li>وزن ناخالص: امامی/طرح قدیم ۸٫۱۳۵۹۸ گرم، نیم ۴٫۰۶۶۵ گرم، ربع ۲٫۰۳۳۲۵ گرم، گرمی ۱٫۰۱ گرم.</li>
         <li>حباب هر سکه بر مبنای <b>وزن طلای خالص واقعی</b> ضرب‌در قیمت هر گرم طلای ۲۴ عیار محاسبه می‌شود، نه وزن ناخالص.</li>
+        <li>«دلار طبق نرخ درهم» از ضرب قیمت درهم (تومان) در نرخ جهانی دلار/درهم به‌دست می‌آید؛ «دلار هرات» نرخ آزاد بازار افغانستان و «تتر» قیمت تومانی هر USDT است.</li>
         <li>مقادیر tgju.org به ریال است و پیش از محاسبه بر ۱۰ تقسیم شده تا به تومان تبدیل شود.</li>
       </ul>
     </div>
@@ -180,6 +199,7 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
 const OUNCE_G = 31.1034768;
 const REFRESH_MS = 45000;
 const API_URL = "https://call2.tgju.org/ajax.json";
+const STALE_HOURS = 20;
 
 const COIN_DEFS = [
   { key:"rob",       name:"ربع سکه",              apiKey:"rob",    grossW:2.03325, pureW:1.8305955 },
@@ -193,6 +213,18 @@ function toNum(s){ return parseFloat(String(s).replace(/,/g,"").trim()); }
 function fmtToman(n){ return Math.round(n).toLocaleString("fa-IR"); }
 function fmtUsd(n){ return n.toLocaleString("en-US",{maximumFractionDigits: n>=100?0:2}); }
 function fmtPct(n){ const s = n>=0? "+":""; return s+n.toLocaleString("fa-IR",{maximumFractionDigits:2,minimumFractionDigits:2}); }
+function fmtFaDate(ts){
+  if(!ts) return "نامشخص";
+  const d = new Date(ts.replace(" ","T")+"+03:30");
+  if (isNaN(d)) return ts;
+  return d.toLocaleString("fa-IR-u-ca-persian",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"});
+}
+function hoursAgo(ts){
+  if(!ts) return Infinity;
+  const d = new Date(ts.replace(" ","T")+"+03:30");
+  if (isNaN(d)) return Infinity;
+  return (Date.now()-d.getTime())/3600000;
+}
 
 function parseData(json){
   const cur = json.current;
@@ -208,7 +240,25 @@ function parseData(json){
 
   const coins = COIN_DEFS.map(c => ({...c, marketToman: rial(c.apiKey)/10}));
 
-  return { usdToman, eurToman, aedToman, gram18Toman, gram24Toman, ounceUsd, silverOunceUsd, meshgalToman, coins };
+  const usdAedCross = toNum(cur.diff_usd_aed.p); // AED per 1 USD, global peg
+  const heratToman = rial("afghan_usd")/10;
+  const tetherToman = rial("crypto-tether-irr")/10;
+  const aedImpliedToman = aedToman * usdAedCross;
+
+  const dollarRows = [
+    { name:"دلار تهران (بازار آزاد)", toman: usdToman, isBase:true, ts: cur.price_dollar_rl.ts },
+    { name:"دلار هرات (افغانستان)",   toman: heratToman, ts: cur.afghan_usd.ts },
+    { name:"دلار طبق نرخ درهم",       toman: aedImpliedToman, ts: cur.price_aed.ts },
+    { name:"تتر (USDT)",              toman: tetherToman, ts: cur["crypto-tether-irr"].ts },
+  ];
+
+  const freshness = {
+    world: cur.ons.ts,
+    domestic: cur.geram18.ts,
+    dollar: cur.price_dollar_rl.ts,
+  };
+
+  return { usdToman, eurToman, aedToman, gram18Toman, gram24Toman, ounceUsd, silverOunceUsd, meshgalToman, coins, dollarRows, freshness };
 }
 
 function compute(d){
@@ -224,7 +274,11 @@ function compute(d){
     const bubblePct = (c.marketToman-intrinsicToman)/intrinsicToman*100;
     return {...c, marketUsd: c.marketToman/d.usdToman, intrinsicToman, bubblePct};
   });
-  return { gram24Usd, gram18Usd, worldGram24Usd, diffPct, meshgalUsd, eurUsd, aedUsd, coins };
+  const dollarRows = d.dollarRows.map(r=>({
+    ...r,
+    diffPct: r.isBase ? 0 : (r.toman-d.usdToman)/d.usdToman*100,
+  }));
+  return { gram24Usd, gram18Usd, worldGram24Usd, diffPct, meshgalUsd, eurUsd, aedUsd, coins, dollarRows };
 }
 
 function render(d, c, fetchedAt){
@@ -251,7 +305,11 @@ function render(d, c, fetchedAt){
     </div>
   `;
 
-  document.getElementById("usdHint").textContent = `نرخ پایه دلار: ${fmtToman(d.usdToman)} تومان`;
+  document.getElementById("usdHint").innerHTML =
+    `نرخ پایه دلار: ${fmtToman(d.usdToman)} تومان` +
+    (hoursAgo(d.freshness.domestic) > STALE_HOURS
+      ? ` · <span class="stale">⚠ نرخ‌های داخلی از ${fmtFaDate(d.freshness.domestic)} به‌روز نشده</span>`
+      : "");
 
   document.getElementById("goldTable").innerHTML = `
     <div class="head"><span>آیتم</span><span>تومان</span><span>دلار</span></div>
@@ -267,6 +325,21 @@ function render(d, c, fetchedAt){
     <div class="r"><div class="name"><span class="dotc"></span> دلار آمریکا</div><div class="toman">${fmtToman(d.usdToman)}</div><div class="usd">۱٫۰۰ $ (پایه)</div></div>
     <div class="r"><div class="name"><span class="dotc"></span> یورو</div><div class="toman">${fmtToman(d.eurToman)}</div><div class="usd">${fmtUsd(c.eurUsd)} $</div></div>
     <div class="r"><div class="name"><span class="dotc"></span> درهم امارات</div><div class="toman">${fmtToman(d.aedToman)}</div><div class="usd">${fmtUsd(c.aedUsd)} $</div></div>
+  `;
+
+  document.getElementById("dollarTable").innerHTML = `
+    <thead><tr><th>منبع</th><th>نرخ (تومان)</th><th>اختلاف با دلار تهران</th></tr></thead>
+    <tbody>
+      ${c.dollarRows.map(r=>`
+        <tr class="${r.isBase?'base':''}">
+          <td class="name">${r.name}</td>
+          <td class="num">${fmtToman(r.toman)}</td>
+          <td class="num">${r.isBase
+            ? `<span class="bubble-chip base">مبنا</span>`
+            : `<span class="bubble-chip ${r.diffPct>=0?'up':'down'}">${fmtPct(r.diffPct)}٪</span>`}</td>
+        </tr>
+      `).join("")}
+    </tbody>
   `;
 
   document.getElementById("coinsTable").innerHTML = `
@@ -286,6 +359,14 @@ function render(d, c, fetchedAt){
 
   document.getElementById("updatedRow").textContent =
     `آخرین دریافت: ${fetchedAt.toLocaleTimeString("fa-IR")} — ${fetchedAt.toLocaleDateString("fa-IR-u-ca-persian",{day:"numeric",month:"long",year:"numeric"})}`;
+
+  const warnBar = document.getElementById("warnBar");
+  if (hoursAgo(d.freshness.domestic) > STALE_HOURS) {
+    warnBar.innerHTML = `⚠ توجه: صفحه هر بار زنده به tgju.org وصل می‌شه، اما خودِ tgju نرخ‌های <b>داخلی</b> (گرم طلا، سکه، دلار) رو از <b>${fmtFaDate(d.freshness.domestic)}</b> به‌روز نکرده — این تأخیر از سمت منبع داده‌ست، نه این صفحه. قیمت انس جهانی طلا/نقره همچنان کاملاً لحظه‌ای هستن.`;
+    warnBar.classList.add("show");
+  } else {
+    warnBar.classList.remove("show");
+  }
 }
 
 function showError(msg){
