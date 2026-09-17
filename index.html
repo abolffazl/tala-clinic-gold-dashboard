@@ -141,7 +141,7 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
       <div class="brand-mark">◈</div>
       <div class="brand-text">
         <h1>داشبورد زنده‌ی طلا، سکه و صندوق‌ها</h1>
-        <p>منبع داده: <a href="https://www.tgju.org/" target="_blank" rel="noopener">tgju.org</a></p>
+        <p>منبع داده: <a href="https://www.tgju.org/" target="_blank" rel="noopener">tgju.org</a> و <a href="https://tradersarena.ir/" target="_blank" rel="noopener">tradersarena.ir</a></p>
       </div>
     </div>
     <div class="status">
@@ -213,6 +213,16 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
   </section>
 
   <section>
+    <div class="section-head">
+      <h2>جریان روزانه‌ی پول صندوق‌ها</h2>
+      <span class="hint" id="flowHint">منبع: tradersarena.ir</span>
+    </div>
+    <div class="card table-wrap">
+      <table class="coins" id="flowTable"></table>
+    </div>
+  </section>
+
+  <section>
     <div class="methodology">
       <b>مبنای محاسبه</b>
       <ul>
@@ -226,8 +236,8 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
       <div class="roadmap">
         <b>نقشه راه (فاز بعد)</b>
         <ul>
-          <li>محاسبه‌ی حباب دقیق هر صندوق (نیاز به NAV رسمی + ترکیب دارایی از fipiran.ir/codal.ir — این سایت‌ها احتمالاً فقط از داخل ایران در دسترس‌اند، نیاز به تست از مرورگر خودت داریم).</li>
-          <li>نمایش جریان روزانه‌ی ورود/خروج پول صندوق‌ها (صدور/ابطال) — منبع رسمی هنوز پیدا نشده.</li>
+          <li>محاسبه‌ی حباب دقیق هر صندوق به‌تفکیک (نیاز به NAV رسمی + ترکیب دارایی از fipiran.ir/codal.ir — این سایت‌ها فقط از داخل ایران در دسترس‌اند).</li>
+          <li>جریان پول فعلاً فقط در سطح <b>کل صندوق‌های طلا/نقره روی هم</b> است (از tradersarena.ir) — تفکیک به ازای هر صندوق هنوز در دسترس نیست.</li>
           <li>گسترش «پیشنهاد تبدیل» به صندوق‌ها، به‌محض این‌که حباب واقعی‌شان قابل‌محاسبه شود.</li>
         </ul>
       </div>
@@ -243,7 +253,18 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
 const OUNCE_G = 31.1034768;
 const REFRESH_MS = 45000;
 const API_URL = "https://call2.tgju.org/ajax.json";
+const FLOW_API_URL = "https://tradersarena.ir/data/market0";
 const STALE_HOURS = 20;
+
+// Field layout reverse-engineered from tradersarena.ir's own client JS:
+// each category array's index 5 = net money inflow(+)/outflow(-) in Rial,
+// index 0 = traded volume (billion shares), index 1 = traded value (Rial).
+// Verified against the live homepage table for "بازار" (market), "صندوق طلا"
+// and "صندوق نقره" rows — all three matched within rounding.
+const FLOW_DEFS = [
+  { key:"gold",   name:"صندوق‌های طلا (روی‌هم)",  apiKey:"cf" },
+  { key:"silver", name:"صندوق‌های نقره (روی‌هم)", apiKey:"scf" },
+];
 
 const COIN_DEFS = [
   { key:"rob",       name:"ربع سکه",              apiKey:"rob",    grossW:2.03325, pureW:1.8305955 },
@@ -490,6 +511,51 @@ function render(d, c, fetchedAt){
   }
 }
 
+function renderFlow(rows, fetchedAt){
+  document.getElementById("flowTable").innerHTML = `
+    <thead><tr><th>دسته</th><th>حجم معاملات (میلیارد سهم)</th><th>ارزش معاملات (میلیارد تومان)</th><th>ورود/خروج پول خالص (میلیارد تومان)</th></tr></thead>
+    <tbody>
+      ${rows.map(r=>`
+        <tr>
+          <td class="name">${r.name}</td>
+          <td class="num">${r.volumeBn.toLocaleString("fa-IR",{maximumFractionDigits:2})}</td>
+          <td class="num">${fmtToman(r.valueBn)}</td>
+          <td class="num"><span class="bubble-chip ${r.netFlowBn>=0?'up':'down'}">${r.netFlowBn>=0?'+':''}${fmtToman(r.netFlowBn)}</span></td>
+        </tr>
+      `).join("")}
+    </tbody>
+  `;
+  document.getElementById("flowHint").textContent =
+    `منبع: tradersarena.ir · لحظه‌ای در روزهای کاری بورس · دریافت: ${fetchedAt.toLocaleTimeString("fa-IR")}`;
+}
+
+let flowInFlight = false;
+async function refreshFlow(){
+  if (flowInFlight) return;
+  flowInFlight = true;
+  try{
+    const res = await fetch(FLOW_API_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const json = await res.json();
+    const rows = FLOW_DEFS.map(f=>{
+      const arr = json[f.apiKey];
+      return {
+        name: f.name,
+        volumeBn: arr[0]/1e9,
+        valueBn: arr[1]/1e10,
+        netFlowBn: arr[5]/1e10,
+      };
+    });
+    renderFlow(rows, new Date());
+  }catch(err){
+    document.getElementById("flowTable").innerHTML = "";
+    document.getElementById("flowHint").textContent =
+      `دریافت از tradersarena.ir ناموفق بود (${err.message}) — این بخش مستقل از بقیه‌ی داشبورد است، بقیه‌ی داده‌ها تحت تأثیر قرار نمی‌گیرند.`;
+  }finally{
+    flowInFlight = false;
+  }
+}
+
 function showError(msg){
   const bar = document.getElementById("errBar");
   bar.textContent = msg;
@@ -518,9 +584,11 @@ async function refresh(){
   }
 }
 
-document.getElementById("refreshBtn").addEventListener("click", refresh);
+document.getElementById("refreshBtn").addEventListener("click", ()=>{ refresh(); refreshFlow(); });
 refresh();
+refreshFlow();
 setInterval(refresh, REFRESH_MS);
+setInterval(refreshFlow, REFRESH_MS);
 </script>
 </body>
 </html>
