@@ -93,6 +93,7 @@ section{margin-bottom:28px;}
 .grid-rows .r .name{font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px;}
 .grid-rows .r .name .dotc{width:8px;height:8px;border-radius:2px;background:var(--accent-2);flex:none;}
 .grid-rows .r .toman{font-size:14px;font-weight:700;text-align:left;}
+.grid-rows .r .toman .bubble-chip{margin-inline-start:6px;vertical-align:middle;}
 .grid-rows .r .usd{font-size:12.5px;color:var(--muted);text-align:left;}
 .grid-rows .head{padding:10px 18px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border);display:grid;grid-template-columns:1.3fr 1fr 1fr;background:var(--surface-2);}
 .grid-rows .head span{text-align:left;}
@@ -285,6 +286,17 @@ const FUND_DEFS = [
 ];
 
 function toNum(s){ return parseFloat(String(s).replace(/,/g,"").trim()); }
+function signedPct(row){
+  if(!row) return 0;
+  const draw = toNum(row.d);
+  const dp = Math.abs(toNum(row.dp) || 0);
+  if(!draw) return 0;
+  return draw < 0 ? -dp : dp;
+}
+function changeChip(pct){
+  if(!pct) return `<span class="bubble-chip na">—</span>`;
+  return `<span class="bubble-chip ${pct>=0?'up':'down'}">${fmtPct(pct)}٪</span>`;
+}
 function fmtToman(n){ return Math.round(n).toLocaleString("fa-IR"); }
 function fmtUsd(n){ return n.toLocaleString("en-US",{maximumFractionDigits: n>=100?0:2}); }
 function fmtPct(n){ const s = n>=0? "+":""; return s+n.toLocaleString("fa-IR",{maximumFractionDigits:2,minimumFractionDigits:2}); }
@@ -313,7 +325,18 @@ function parseData(json){
   const silverOunceUsd = toNum(cur.silver.p);
   const meshgalToman = rial("mesghal")/10;
 
-  const coins = COIN_DEFS.map(c => ({...c, marketToman: rial(c.apiKey)/10}));
+  const changePct = {
+    gram18: signedPct(cur.geram18),
+    gram24: signedPct(cur.geram24),
+    meshgal: signedPct(cur.mesghal),
+    usd: signedPct(cur.price_dollar_rl),
+    eur: signedPct(cur.price_eur),
+    aed: signedPct(cur.price_aed),
+    ounce: signedPct(cur.ons),
+    silver: signedPct(cur.silver),
+  };
+
+  const coins = COIN_DEFS.map(c => ({...c, marketToman: rial(c.apiKey)/10, changePct: signedPct(cur[c.apiKey])}));
 
   const usdAedCross = toNum(cur.diff_usd_aed.p); // AED per 1 USD, global peg
   const heratToman = rial("afghan_usd")/10;
@@ -334,7 +357,7 @@ function parseData(json){
       navToman: toNum(row.p)/10,
       highToman: toNum(row.h)/10,
       lowToman: toNum(row.l)/10,
-      dayChangePct: toNum(row.dp) * (String(row.dt||"").includes("low") ? -1 : 1),
+      dayChangePct: signedPct(row),
       ts: row.ts,
     };
   });
@@ -346,7 +369,7 @@ function parseData(json){
     funds: cur.ime_fund_ayar.ts,
   };
 
-  return { usdToman, eurToman, aedToman, gram18Toman, gram24Toman, ounceUsd, silverOunceUsd, meshgalToman, coins, dollarRows, funds, freshness };
+  return { usdToman, eurToman, aedToman, gram18Toman, gram24Toman, ounceUsd, silverOunceUsd, meshgalToman, coins, dollarRows, funds, freshness, changePct };
 }
 
 function compute(d){
@@ -382,12 +405,12 @@ function compute(d){
 function render(d, c, fetchedAt){
   document.getElementById("hero").innerHTML = `
     <div class="stat">
-      <div class="label">طلای ۱۸ عیار (هر گرم)</div>
+      <div class="label">طلای ۱۸ عیار (هر گرم)${changeChip(d.changePct.gram18)}</div>
       <div class="value">${fmtToman(d.gram18Toman)} <span style="font-size:12px;font-weight:600;color:var(--muted)">تومان</span></div>
       <div class="sub">≈ ${fmtUsd(c.gram18Usd)} $</div>
     </div>
     <div class="stat">
-      <div class="label">طلای ۲۴ عیار (هر گرم)</div>
+      <div class="label">طلای ۲۴ عیار (هر گرم)${changeChip(d.changePct.gram24)}</div>
       <div class="value">${fmtToman(d.gram24Toman)} <span style="font-size:12px;font-weight:600;color:var(--muted)">تومان</span></div>
       <div class="sub">≈ ${fmtUsd(c.gram24Usd)} $</div>
     </div>
@@ -436,19 +459,19 @@ function render(d, c, fetchedAt){
       : "");
 
   document.getElementById("goldTable").innerHTML = `
-    <div class="head"><span>آیتم</span><span>تومان</span><span>دلار</span></div>
-    <div class="r"><div class="name"><span class="dotc"></span> گرم ۱۸ عیار (تهران)</div><div class="toman">${fmtToman(d.gram18Toman)}</div><div class="usd">${fmtUsd(c.gram18Usd)} $</div></div>
-    <div class="r"><div class="name"><span class="dotc"></span> گرم ۲۴ عیار</div><div class="toman">${fmtToman(d.gram24Toman)}</div><div class="usd">${fmtUsd(c.gram24Usd)} $</div></div>
-    <div class="r"><div class="name"><span class="dotc"></span> مظنه تهران (مثقال)</div><div class="toman">${fmtToman(d.meshgalToman)}</div><div class="usd">${fmtUsd(c.meshgalUsd)} $</div></div>
-    <div class="r"><div class="name"><span class="dotc"></span> انس جهانی طلا</div><div class="toman">—</div><div class="usd">${fmtUsd(d.ounceUsd)} $</div></div>
-    <div class="r"><div class="name"><span class="dotc"></span> انس جهانی نقره</div><div class="toman">—</div><div class="usd">${fmtUsd(d.silverOunceUsd)} $</div></div>
+    <div class="head"><span>آیتم</span><span>تومان (تغییر روزانه)</span><span>دلار</span></div>
+    <div class="r"><div class="name"><span class="dotc"></span> گرم ۱۸ عیار (تهران)</div><div class="toman">${fmtToman(d.gram18Toman)} ${changeChip(d.changePct.gram18)}</div><div class="usd">${fmtUsd(c.gram18Usd)} $</div></div>
+    <div class="r"><div class="name"><span class="dotc"></span> گرم ۲۴ عیار</div><div class="toman">${fmtToman(d.gram24Toman)} ${changeChip(d.changePct.gram24)}</div><div class="usd">${fmtUsd(c.gram24Usd)} $</div></div>
+    <div class="r"><div class="name"><span class="dotc"></span> مظنه تهران (مثقال)</div><div class="toman">${fmtToman(d.meshgalToman)} ${changeChip(d.changePct.meshgal)}</div><div class="usd">${fmtUsd(c.meshgalUsd)} $</div></div>
+    <div class="r"><div class="name"><span class="dotc"></span> انس جهانی طلا</div><div class="toman">${changeChip(d.changePct.ounce)}</div><div class="usd">${fmtUsd(d.ounceUsd)} $</div></div>
+    <div class="r"><div class="name"><span class="dotc"></span> انس جهانی نقره</div><div class="toman">${changeChip(d.changePct.silver)}</div><div class="usd">${fmtUsd(d.silverOunceUsd)} $</div></div>
   `;
 
   document.getElementById("fxTable").innerHTML = `
-    <div class="head"><span>ارز</span><span>تومان</span><span>معادل دلاری</span></div>
-    <div class="r"><div class="name"><span class="dotc"></span> دلار آمریکا</div><div class="toman">${fmtToman(d.usdToman)}</div><div class="usd">۱٫۰۰ $ (پایه)</div></div>
-    <div class="r"><div class="name"><span class="dotc"></span> یورو</div><div class="toman">${fmtToman(d.eurToman)}</div><div class="usd">${fmtUsd(c.eurUsd)} $</div></div>
-    <div class="r"><div class="name"><span class="dotc"></span> درهم امارات</div><div class="toman">${fmtToman(d.aedToman)}</div><div class="usd">${fmtUsd(c.aedUsd)} $</div></div>
+    <div class="head"><span>ارز</span><span>تومان (تغییر روزانه)</span><span>معادل دلاری</span></div>
+    <div class="r"><div class="name"><span class="dotc"></span> دلار آمریکا</div><div class="toman">${fmtToman(d.usdToman)} ${changeChip(d.changePct.usd)}</div><div class="usd">۱٫۰۰ $ (پایه)</div></div>
+    <div class="r"><div class="name"><span class="dotc"></span> یورو</div><div class="toman">${fmtToman(d.eurToman)} ${changeChip(d.changePct.eur)}</div><div class="usd">${fmtUsd(c.eurUsd)} $</div></div>
+    <div class="r"><div class="name"><span class="dotc"></span> درهم امارات</div><div class="toman">${fmtToman(d.aedToman)} ${changeChip(d.changePct.aed)}</div><div class="usd">${fmtUsd(c.aedUsd)} $</div></div>
   `;
 
   document.getElementById("dollarTable").innerHTML = `
@@ -467,12 +490,13 @@ function render(d, c, fetchedAt){
   `;
 
   document.getElementById("coinsTable").innerHTML = `
-    <thead><tr><th>نوع سکه</th><th>قیمت بازار (تومان)</th><th>معادل دلاری</th><th>ارزش ذاتی (تومان)</th><th>حباب</th></tr></thead>
+    <thead><tr><th>نوع سکه</th><th>قیمت بازار (تومان)</th><th>تغییر روزانه</th><th>معادل دلاری</th><th>ارزش ذاتی (تومان)</th><th>حباب</th></tr></thead>
     <tbody>
       ${c.coins.map(co=>`
         <tr>
           <td class="name">${co.name}</td>
           <td class="num">${fmtToman(co.marketToman)}</td>
+          <td class="num">${changeChip(co.changePct)}</td>
           <td class="num">${fmtUsd(co.marketUsd)} $</td>
           <td class="num">${fmtToman(co.intrinsicToman)}</td>
           <td class="num"><span class="bubble-chip ${co.bubblePct>=0?'up':'down'}">${fmtPct(co.bubblePct)}٪</span></td>
@@ -481,23 +505,25 @@ function render(d, c, fetchedAt){
     </tbody>
   `;
 
+  const fundsIsToday = hoursAgo(d.freshness.funds) < 20;
   document.getElementById("fundsTable").innerHTML = `
-    <thead><tr><th>صندوق</th><th>NAV (تومان)</th><th>تغییر روزانه</th><th>بازه امروز (کف–سقف)</th></tr></thead>
+    <thead><tr><th>صندوق</th><th>${fundsIsToday?'NAV امروز':'NAV آخرین روز کاری'} (تومان)</th><th>تغییر نسبت به روز کاری قبل</th><th>${fundsIsToday?'بازه‌ی امروز':'بازه‌ی آخرین روز کاری'} (کف–سقف)</th></tr></thead>
     <tbody>
       ${d.funds.map(f=>`
         <tr>
           <td class="name">${f.name}</td>
           <td class="num">${fmtToman(f.navToman)}</td>
-          <td class="num">${f.dayChangePct===0
-            ? `<span class="bubble-chip na">—</span>`
-            : `<span class="bubble-chip ${f.dayChangePct>=0?'up':'down'}">${fmtPct(f.dayChangePct)}٪</span>`}</td>
+          <td class="num">${changeChip(f.dayChangePct)}</td>
           <td class="num">${fmtToman(f.lowToman)} – ${fmtToman(f.highToman)}</td>
         </tr>
       `).join("")}
     </tbody>
   `;
-  document.getElementById("fundsHint").innerHTML =
-    `آخرین قیمت پایانی: ${fmtFaDate(d.freshness.funds)} · فقط روزهای کاری بورس به‌روز می‌شود`;
+  const fundsHintEl = document.getElementById("fundsHint");
+  fundsHintEl.classList.toggle("stale", !fundsIsToday);
+  fundsHintEl.innerHTML = fundsIsToday
+    ? `آخرین قیمت پایانی: امروز، ${fmtFaDate(d.freshness.funds)}`
+    : `⚠ بورس امروز تعطیل بوده — قیمت‌ها و بازه‌ی زیر مربوط به <b>آخرین روز کاری (${fmtFaDate(d.freshness.funds)})</b> است، نه امروز. «تغییر» هم نسبت به روز کاری قبل از آن محاسبه شده.`;
 
   document.getElementById("updatedRow").textContent =
     `آخرین دریافت: ${fetchedAt.toLocaleTimeString("fa-IR")} — ${fetchedAt.toLocaleDateString("fa-IR-u-ca-persian",{day:"numeric",month:"long",year:"numeric"})}`;
