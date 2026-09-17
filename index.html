@@ -27,6 +27,8 @@
   --err-bg:#f8e4e4;
   --warn:#8a5a1f;
   --warn-bg:#f7e6c9;
+  --pick:#2f6b3a;
+  --pick-bg:#e6f2e8;
   --shadow: 0 1px 2px rgba(40,30,10,.06), 0 8px 24px rgba(40,30,10,.06);
 }
 :root{color-scheme:light;}
@@ -107,10 +109,25 @@ table.coins tr.base td{background:var(--surface-2);}
 .table-wrap{overflow-x:auto;}
 .bubble-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;}
 .bubble-chip.base{color:var(--muted);background:var(--surface-2);}
+.bubble-chip.na{color:var(--muted);background:var(--surface-2);font-weight:600;}
+
+.advisor{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media (max-width:600px){.advisor{grid-template-columns:1fr;}}
+.pick-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow);}
+.pick-card .kicker{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.pick-card .row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:10px 0;border-top:1px dashed var(--border);}
+.pick-card .row:first-of-type{border-top:none;margin-top:8px;}
+.pick-card .who{font-weight:700;font-size:13.5px;}
+.pick-card .val{font-size:12.5px;color:var(--muted);}
+.pick-tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;}
+.pick-tag.sell{color:var(--down);background:var(--down-bg);}
+.pick-tag.buy{color:var(--pick);background:var(--pick-bg);}
 
 .methodology{background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:16px 18px;font-size:12.5px;color:var(--muted);line-height:2;}
 .methodology b{color:var(--text);}
 .methodology ul{margin:8px 0 0;padding-inline-start:20px;}
+.roadmap{background:var(--surface-2);border:1px dashed var(--border);border-radius:16px;padding:16px 18px;font-size:12.5px;color:var(--muted);line-height:2;margin-top:12px;}
+.roadmap b{color:var(--text);}
 
 .skel{color:var(--muted);}
 footer{margin-top:30px;font-size:11.5px;color:var(--muted);text-align:center;line-height:1.9;}
@@ -123,7 +140,7 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
     <div class="brand">
       <div class="brand-mark">◈</div>
       <div class="brand-text">
-        <h1>داشبورد زنده‌ی طلا و سکه</h1>
+        <h1>داشبورد زنده‌ی طلا، سکه و صندوق‌ها</h1>
         <p>منبع داده: <a href="https://www.tgju.org/" target="_blank" rel="noopener">tgju.org</a></p>
       </div>
     </div>
@@ -140,6 +157,14 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
   <div class="warnbar" id="warnBar"></div>
 
   <div class="hero" id="hero"></div>
+
+  <section>
+    <div class="section-head">
+      <h2>پیشنهاد لحظه‌ای تبدیل</h2>
+      <span class="hint">بر مبنای حباب سکه‌ها و اختلاف کانال‌های دلار — نه توصیه سرمایه‌گذاری، صرفاً مقایسه‌ی حباب/اسپرد فعلی</span>
+    </div>
+    <div class="advisor" id="advisor"></div>
+  </section>
 
   <section>
     <div class="section-head">
@@ -178,6 +203,16 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
   </section>
 
   <section>
+    <div class="section-head">
+      <h2>صندوق‌های طلا (NAV بورسی)</h2>
+      <span class="hint" id="fundsHint">عیار، گنج، مثقال، طلای لوتوس، آلتون، آتش، کهربا</span>
+    </div>
+    <div class="card table-wrap">
+      <table class="coins" id="fundsTable"></table>
+    </div>
+  </section>
+
+  <section>
     <div class="methodology">
       <b>مبنای محاسبه</b>
       <ul>
@@ -185,8 +220,17 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
         <li>وزن ناخالص: امامی/طرح قدیم ۸٫۱۳۵۹۸ گرم، نیم ۴٫۰۶۶۵ گرم، ربع ۲٫۰۳۳۲۵ گرم، گرمی ۱٫۰۱ گرم.</li>
         <li>حباب هر سکه بر مبنای <b>وزن طلای خالص واقعی</b> ضرب‌در قیمت هر گرم طلای ۲۴ عیار محاسبه می‌شود، نه وزن ناخالص.</li>
         <li>«دلار طبق نرخ درهم» از ضرب قیمت درهم (تومان) در نرخ جهانی دلار/درهم به‌دست می‌آید؛ «دلار هرات» نرخ آزاد بازار افغانستان و «تتر» قیمت تومانی هر USDT است.</li>
-        <li>مقادیر tgju.org به ریال است و پیش از محاسبه بر ۱۰ تقسیم شده تا به تومان تبدیل شود.</li>
+        <li>«پیشنهاد تبدیل» فقط بین دارایی‌هایی که همین صفحه برایشان حباب/اسپرد قابل‌اتکا محاسبه می‌کند رتبه‌بندی می‌کند (سکه‌ها و کانال‌های دلار) — صندوق‌ها فعلاً چون NAV/ترکیب دارایی رسمی‌شان در دسترس نیست، در رتبه‌بندی نمی‌آیند (به بخش «نقشه راه» پایین صفحه نگاه کنید).</li>
+        <li>مقادیر tgju.org به ریال است و پیش از محاسبه بر ۱۰ تقسیم شده تا به تومان تبدیل شود. NAV صندوق‌ها فقط در روزهای کاری بورس تغییر می‌کند.</li>
       </ul>
+      <div class="roadmap">
+        <b>نقشه راه (فاز بعد)</b>
+        <ul>
+          <li>محاسبه‌ی حباب دقیق هر صندوق (نیاز به NAV رسمی + ترکیب دارایی از fipiran.ir/codal.ir — این سایت‌ها احتمالاً فقط از داخل ایران در دسترس‌اند، نیاز به تست از مرورگر خودت داریم).</li>
+          <li>نمایش جریان روزانه‌ی ورود/خروج پول صندوق‌ها (صدور/ابطال) — منبع رسمی هنوز پیدا نشده.</li>
+          <li>گسترش «پیشنهاد تبدیل» به صندوق‌ها، به‌محض این‌که حباب واقعی‌شان قابل‌محاسبه شود.</li>
+        </ul>
+      </div>
     </div>
   </section>
 
@@ -207,6 +251,16 @@ const COIN_DEFS = [
   { key:"emami_new",  name:"سکه امامی (طرح جدید)", apiKey:"sekee",  grossW:8.13598, pureW:7.322382 },
   { key:"emami_old",  name:"بهار آزادی (طرح قدیم)", apiKey:"sekeb",  grossW:8.13598, pureW:7.322382 },
   { key:"gerami",     name:"سکه یک گرمی",          apiKey:"gerami", grossW:1.01,    pureW:0.909 },
+];
+
+const FUND_DEFS = [
+  { key:"ayar",    name:"عیار",         apiKey:"ime_fund_ayar" },
+  { key:"ganj",    name:"گنج",          apiKey:"ime_fund_ganj" },
+  { key:"mesghal", name:"صندوق مثقال",  apiKey:"ime_fund_mesghal" },
+  { key:"lotus",   name:"طلای لوتوس",   apiKey:"ime_fund_lotuss" },
+  { key:"alton",   name:"آلتون",        apiKey:"ime_fund_alton" },
+  { key:"atash",   name:"آتش",          apiKey:"ime_fund_atash" },
+  { key:"kahroba", name:"کهربا",        apiKey:"ime_fund_kahroba" },
 ];
 
 function toNum(s){ return parseFloat(String(s).replace(/,/g,"").trim()); }
@@ -252,13 +306,26 @@ function parseData(json){
     { name:"تتر (USDT)",              toman: tetherToman, ts: cur["crypto-tether-irr"].ts },
   ];
 
+  const funds = FUND_DEFS.map(f=>{
+    const row = cur[f.apiKey];
+    return {
+      ...f,
+      navToman: toNum(row.p)/10,
+      highToman: toNum(row.h)/10,
+      lowToman: toNum(row.l)/10,
+      dayChangePct: toNum(row.dp) * (String(row.dt||"").includes("low") ? -1 : 1),
+      ts: row.ts,
+    };
+  });
+
   const freshness = {
     world: cur.ons.ts,
     domestic: cur.geram18.ts,
     dollar: cur.price_dollar_rl.ts,
+    funds: cur.ime_fund_ayar.ts,
   };
 
-  return { usdToman, eurToman, aedToman, gram18Toman, gram24Toman, ounceUsd, silverOunceUsd, meshgalToman, coins, dollarRows, freshness };
+  return { usdToman, eurToman, aedToman, gram18Toman, gram24Toman, ounceUsd, silverOunceUsd, meshgalToman, coins, dollarRows, funds, freshness };
 }
 
 function compute(d){
@@ -278,7 +345,17 @@ function compute(d){
     ...r,
     diffPct: r.isBase ? 0 : (r.toman-d.usdToman)/d.usdToman*100,
   }));
-  return { gram24Usd, gram18Usd, worldGram24Usd, diffPct, meshgalUsd, eurUsd, aedUsd, coins, dollarRows };
+
+  const coinsSorted = [...coins].sort((a,b)=>a.bubblePct-b.bubblePct);
+  const cheapestCoin = coinsSorted[0];
+  const priciestCoin = coinsSorted[coinsSorted.length-1];
+
+  const dollarSorted = [...dollarRows].sort((a,b)=>a.toman-b.toman);
+  const cheapestDollar = dollarSorted[0];
+  const priciestDollar = dollarSorted[dollarSorted.length-1];
+
+  return { gram24Usd, gram18Usd, worldGram24Usd, diffPct, meshgalUsd, eurUsd, aedUsd, coins, dollarRows,
+    advisor: { cheapestCoin, priciestCoin, cheapestDollar, priciestDollar } };
 }
 
 function render(d, c, fetchedAt){
@@ -302,6 +379,32 @@ function render(d, c, fetchedAt){
       <div class="label">اختلاف طلای ایران با جهان<span class="chip ${c.diffPct>=0?'up':'down'}">${fmtPct(c.diffPct)}٪</span></div>
       <div class="value">${c.diffPct>=0?"گران‌تر":"ارزان‌تر"}</div>
       <div class="sub">مبنا: قیمت هر گرم ۲۴ عیار (دلاری)</div>
+    </div>
+  `;
+
+  const a = c.advisor;
+  document.getElementById("advisor").innerHTML = `
+    <div class="pick-card">
+      <div class="kicker">سکه‌ها</div>
+      <div class="row">
+        <div><div class="who">${a.priciestCoin.name}</div><div class="val">حباب ${fmtPct(a.priciestCoin.bubblePct)}٪</div></div>
+        <span class="pick-tag sell">پرحباب‌ترین</span>
+      </div>
+      <div class="row">
+        <div><div class="who">${a.cheapestCoin.name}</div><div class="val">حباب ${fmtPct(a.cheapestCoin.bubblePct)}٪</div></div>
+        <span class="pick-tag buy">کم‌حباب‌ترین</span>
+      </div>
+    </div>
+    <div class="pick-card">
+      <div class="kicker">کانال‌های دلار</div>
+      <div class="row">
+        <div><div class="who">${a.cheapestDollar.name}</div><div class="val">${fmtToman(a.cheapestDollar.toman)} تومان</div></div>
+        <span class="pick-tag buy">ارزان‌ترین برای خرید</span>
+      </div>
+      <div class="row">
+        <div><div class="who">${a.priciestDollar.name}</div><div class="val">${fmtToman(a.priciestDollar.toman)} تومان</div></div>
+        <span class="pick-tag sell">گران‌ترین (برای فروش بهتر)</span>
+      </div>
     </div>
   `;
 
@@ -356,6 +459,24 @@ function render(d, c, fetchedAt){
       `).join("")}
     </tbody>
   `;
+
+  document.getElementById("fundsTable").innerHTML = `
+    <thead><tr><th>صندوق</th><th>NAV (تومان)</th><th>تغییر روزانه</th><th>بازه امروز (کف–سقف)</th></tr></thead>
+    <tbody>
+      ${d.funds.map(f=>`
+        <tr>
+          <td class="name">${f.name}</td>
+          <td class="num">${fmtToman(f.navToman)}</td>
+          <td class="num">${f.dayChangePct===0
+            ? `<span class="bubble-chip na">—</span>`
+            : `<span class="bubble-chip ${f.dayChangePct>=0?'up':'down'}">${fmtPct(f.dayChangePct)}٪</span>`}</td>
+          <td class="num">${fmtToman(f.lowToman)} – ${fmtToman(f.highToman)}</td>
+        </tr>
+      `).join("")}
+    </tbody>
+  `;
+  document.getElementById("fundsHint").innerHTML =
+    `آخرین قیمت پایانی: ${fmtFaDate(d.freshness.funds)} · فقط روزهای کاری بورس به‌روز می‌شود`;
 
   document.getElementById("updatedRow").textContent =
     `آخرین دریافت: ${fetchedAt.toLocaleTimeString("fa-IR")} — ${fetchedAt.toLocaleDateString("fa-IR-u-ca-persian",{day:"numeric",month:"long",year:"numeric"})}`;
