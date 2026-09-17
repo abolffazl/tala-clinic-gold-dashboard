@@ -184,7 +184,9 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
       <h2>طلا و مظنه</h2>
       <span class="hint" id="usdHint"></span>
     </div>
-    <div class="card grid-rows" id="goldTable"></div>
+    <div class="card table-wrap">
+      <table class="coins" id="goldTable"></table>
+    </div>
   </section>
 
   <section>
@@ -254,13 +256,14 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
         <li>حباب هر سکه بر مبنای <b>وزن طلای خالص واقعی</b> ضرب‌در قیمت هر گرم طلای ۲۴ عیار محاسبه می‌شود، نه وزن ناخالص.</li>
         <li>نقره‌ی ۹۹۹ یعنی نقره‌ی خالص و ۹۲۵ یعنی نقره‌ی استرلینگ (۹۲٫۵٪ خالص)؛ حباب هر دو نسبت به قیمت جهانی هر گرم نقره (از روی انس) محاسبه می‌شود.</li>
         <li>«دلار طبق نرخ درهم» از ضرب قیمت درهم (تومان) در نرخ جهانی دلار/درهم به‌دست می‌آید؛ «دلار هرات» نرخ آزاد بازار افغانستان و «تتر» قیمت تومانی هر USDT است.</li>
+        <li>«دلار محاسباتی» (کنار گرم/سکه/نقره) یعنی: اگر نرخ دلار واقعی به‌جای حبابِ فعلیِ همان قلم اعمال می‌شد، دلار باید چند تومان باشد — فرمول: نرخ دلار × (۱ + درصد حباب همان قلم). قلم‌های پرحباب‌تر، دلار محاسباتیِ بالاتری نشان می‌دهند.</li>
         <li>«پیشنهاد تبدیل» فقط بین دارایی‌هایی که همین صفحه برایشان حباب/اسپرد قابل‌اتکا محاسبه می‌کند رتبه‌بندی می‌کند (سکه‌ها و کانال‌های دلار) — صندوق‌ها فعلاً چون NAV/ترکیب دارایی رسمی‌شان در دسترس نیست، در رتبه‌بندی نمی‌آیند.</li>
         <li>مقادیر tgju.org به ریال است و پیش از محاسبه بر ۱۰ تقسیم شده تا به تومان تبدیل شود. NAV صندوق‌ها فقط در روزهای کاری بورس تغییر می‌کند.</li>
       </ul>
       <div class="roadmap">
         <b>نقشه راه (فاز بعد)</b>
         <ul>
-          <li>محاسبه‌ی حباب دقیق هر صندوق به‌تفکیک (نیاز به NAV رسمی + ترکیب دارایی از fipiran.ir/codal.ir — این سایت‌ها فقط از داخل ایران در دسترس‌اند).</li>
+          <li>محاسبه‌ی حباب دقیق و «دلار محاسباتی» هر صندوق به‌تفکیک (نیاز به NAV رسمی + ترکیب دارایی از fipiran.ir/codal.ir — این سایت‌ها فقط از داخل ایران در دسترس‌اند).</li>
           <li>جریان پول فعلاً فقط در سطح <b>کل صندوق‌های طلا/نقره روی هم</b> است (از tradersarena.ir) — تفکیک به ازای هر صندوق هنوز در دسترس نیست.</li>
           <li>گسترش «پیشنهاد تبدیل» به صندوق‌ها، به‌محض این‌که حباب واقعی‌شان قابل‌محاسبه شود.</li>
         </ul>
@@ -389,6 +392,8 @@ function parseData(json){
   const aedToman = rial("price_aed")/10;
   const gram18Toman = rial("geram18")/10;
   const gram24Toman = rial("geram24")/10;
+  const gram20Toman = gram24Toman*(20/24);
+  const gram21Toman = gram24Toman*(21/24);
   const ounceUsd = toNum(cur.ons.p);
   const silverOunceUsd = toNum(cur.silver.p);
   const meshgalToman = rial("mesghal")/10;
@@ -448,18 +453,35 @@ function parseData(json){
     funds: cur.ime_fund_ayar.ts,
   };
 
-  return { usdToman, eurToman, aedToman, gram18Toman, gram24Toman, ounceUsd, silverOunceUsd, meshgalToman,
+  return { usdToman, eurToman, aedToman, gram18Toman, gram24Toman, gram20Toman, gram21Toman, ounceUsd, silverOunceUsd, meshgalToman,
     silverGram999Toman, silverGram925Toman, coins, dollarRows, funds, freshness, changePct };
 }
 
+// "دلار محاسباتی": the implied USD/Toman rate an item's own domestic price
+// backs out to, given its bubble vs. world-equivalent value. Same pattern as
+// the "دلار محاسباتی" column in the reference exports (fund/coin trackers):
+// impliedUsd = actual dollar rate × (1 + bubble%).
+function impliedDollarToman(usdToman, bubblePct){
+  return usdToman * (1 + bubblePct/100);
+}
+
 function compute(d){
+  const worldGram24Usd = d.ounceUsd/OUNCE_G;
   const gram24Usd = d.gram24Toman/d.usdToman;
   const gram18Usd = d.gram18Toman/d.usdToman;
-  const worldGram24Usd = d.ounceUsd/OUNCE_G;
-  const diffPct = (gram24Usd-worldGram24Usd)/worldGram24Usd*100;
+  const gram20Usd = d.gram20Toman/d.usdToman;
+  const gram21Usd = d.gram21Toman/d.usdToman;
   const meshgalUsd = d.meshgalToman/d.usdToman;
   const eurUsd = d.eurToman/d.usdToman;
   const aedUsd = d.aedToman/d.usdToman;
+
+  const gram18BubblePct = (gram18Usd-worldGram24Usd*0.75)/(worldGram24Usd*0.75)*100;
+  const gram20BubblePct = (gram20Usd-worldGram24Usd*(20/24))/(worldGram24Usd*(20/24))*100;
+  const gram21BubblePct = (gram21Usd-worldGram24Usd*(21/24))/(worldGram24Usd*(21/24))*100;
+  const gram24BubblePct = (gram24Usd-worldGram24Usd)/worldGram24Usd*100;
+  const meshgalWorldUsd = worldGram24Usd*(17/24)*4.6083; // "مظنه" is the traditional 17-carat mesghal (4.6083g) rate
+  const meshgalBubblePct = (meshgalUsd-meshgalWorldUsd)/meshgalWorldUsd*100;
+  const diffPct = gram24BubblePct;
 
   const worldSilverGramUsd = d.silverOunceUsd/OUNCE_G;
   const silver999Usd = d.silverGram999Toman/d.usdToman;
@@ -469,7 +491,8 @@ function compute(d){
   const coins = d.coins.map(c=>{
     const intrinsicToman = c.pureW * d.gram24Toman;
     const bubblePct = (c.marketToman-intrinsicToman)/intrinsicToman*100;
-    return {...c, marketUsd: c.marketToman/d.usdToman, intrinsicToman, bubblePct};
+    return {...c, marketUsd: c.marketToman/d.usdToman, intrinsicToman, bubblePct,
+      impliedUsdToman: impliedDollarToman(d.usdToman, bubblePct)};
   });
   const dollarRows = d.dollarRows.map(r=>({
     ...r,
@@ -484,7 +507,8 @@ function compute(d){
   const cheapestDollar = dollarSorted[0];
   const priciestDollar = dollarSorted[dollarSorted.length-1];
 
-  return { gram24Usd, gram18Usd, worldGram24Usd, diffPct, meshgalUsd, eurUsd, aedUsd, coins, dollarRows,
+  return { gram24Usd, gram18Usd, gram20Usd, gram21Usd, worldGram24Usd, diffPct, meshgalUsd, eurUsd, aedUsd, coins, dollarRows,
+    gram18BubblePct, gram20BubblePct, gram21BubblePct, gram24BubblePct, meshgalBubblePct,
     worldSilverGramUsd, silver999Usd, silver925Usd, silverBubblePct,
     advisor: { cheapestCoin, priciestCoin, cheapestDollar, priciestDollar } };
 }
@@ -545,19 +569,27 @@ function render(d, c, fetchedAt){
       ? ` · <span class="stale">⚠ نرخ‌های داخلی از ${fmtFaDate(d.freshness.domestic)} به‌روز نشده</span>`
       : "");
 
-  document.getElementById("goldTable").innerHTML = `
-    <div class="head"><span>آیتم</span><span>تومان (تغییر روزانه)</span><span>دلار</span></div>
-    <div class="r"><div class="name"><span class="dotc"></span> گرم ۱۸ عیار (تهران)</div><div class="toman">${fmtToman(d.gram18Toman)} ${changeChip(d.changePct.gram18)}</div><div class="usd">${fmtUsd(c.gram18Usd)} $</div></div>
-    <div class="r"><div class="name"><span class="dotc"></span> گرم ۲۴ عیار</div><div class="toman">${fmtToman(d.gram24Toman)} ${changeChip(d.changePct.gram24)}</div><div class="usd">${fmtUsd(c.gram24Usd)} $</div></div>
-    <div class="r"><div class="name"><span class="dotc"></span> مظنه تهران (مثقال)</div><div class="toman">${fmtToman(d.meshgalToman)} ${changeChip(d.changePct.meshgal)}</div><div class="usd">${fmtUsd(c.meshgalUsd)} $</div></div>
-    <div class="r"><div class="name"><span class="dotc"></span> انس جهانی طلا</div><div class="toman">${changeChip(d.changePct.ounce)}</div><div class="usd">${fmtUsd(d.ounceUsd)} $</div></div>
-  `;
+  const goldRows = [
+    { key:"g18", name:"گرم ۱۸ عیار (تهران)", toman: d.gram18Toman, usd: c.gram18Usd, changePct: d.changePct.gram18, impliedUsdToman: impliedDollarToman(d.usdToman, c.gram18BubblePct) },
+    { key:"g20", name:"گرم ۲۰ عیار",          toman: d.gram20Toman, usd: c.gram20Usd, changePct: d.changePct.gram24, impliedUsdToman: impliedDollarToman(d.usdToman, c.gram20BubblePct) },
+    { key:"g21", name:"گرم ۲۱ عیار",          toman: d.gram21Toman, usd: c.gram21Usd, changePct: d.changePct.gram24, impliedUsdToman: impliedDollarToman(d.usdToman, c.gram21BubblePct) },
+    { key:"g24", name:"گرم ۲۴ عیار",          toman: d.gram24Toman, usd: c.gram24Usd, changePct: d.changePct.gram24, impliedUsdToman: impliedDollarToman(d.usdToman, c.gram24BubblePct) },
+    { key:"meshgal", name:"مظنه تهران (مثقال)", toman: d.meshgalToman, usd: c.meshgalUsd, changePct: d.changePct.meshgal, impliedUsdToman: impliedDollarToman(d.usdToman, c.meshgalBubblePct) },
+  ];
+  renderSortableTable(document.getElementById("goldTable"), [
+    { key:"name", label:"آیتم", render:r=>r.name },
+    { key:"toman", label:"تومان", numeric:true, render:r=>fmtToman(r.toman) },
+    { key:"changePct", label:"تغییر روزانه", numeric:true, render:r=>changeChip(r.changePct) },
+    { key:"usd", label:"دلار", numeric:true, render:r=>fmtUsd(r.usd)+" $" },
+    { key:"impliedUsdToman", label:"دلار محاسباتی", numeric:true, render:r=>fmtToman(r.impliedUsdToman)+" تومان" },
+  ], goldRows);
 
+  const silverImpliedUsdToman = impliedDollarToman(d.usdToman, c.silverBubblePct);
   const silverRows = [
-    { key:"ounce",  name:"انس جهانی نقره",        toman: null,                      usd: d.silverOunceUsd, changePct: d.changePct.silverOunce, bubblePct: null },
-    { key:"g999",   name:"هر گرم نقره ۹۹۹ (خالص)", toman: d.silverGram999Toman,      usd: c.silver999Usd,   changePct: d.changePct.silver999,   bubblePct: c.silverBubblePct },
-    { key:"g925",   name:"هر گرم نقره ۹۲۵ (استرلینگ)", toman: d.silverGram925Toman,  usd: c.silver925Usd,   changePct: d.changePct.silver925,   bubblePct: null },
-    { key:"kg999",  name:"هر کیلوگرم نقره ۹۹۹",    toman: d.silverGram999Toman*1000, usd: c.silver999Usd*1000, changePct: d.changePct.silver999, bubblePct: null },
+    { key:"ounce",  name:"انس جهانی نقره",        toman: null,                      usd: d.silverOunceUsd, changePct: d.changePct.silverOunce, bubblePct: null, impliedUsdToman: null },
+    { key:"g999",   name:"هر گرم نقره ۹۹۹ (خالص)", toman: d.silverGram999Toman,      usd: c.silver999Usd,   changePct: d.changePct.silver999,   bubblePct: c.silverBubblePct, impliedUsdToman: silverImpliedUsdToman },
+    { key:"g925",   name:"هر گرم نقره ۹۲۵ (استرلینگ)", toman: d.silverGram925Toman,  usd: c.silver925Usd,   changePct: d.changePct.silver925,   bubblePct: null, impliedUsdToman: null },
+    { key:"kg999",  name:"هر کیلوگرم نقره ۹۹۹",    toman: d.silverGram999Toman*1000, usd: c.silver999Usd*1000, changePct: d.changePct.silver999, bubblePct: null, impliedUsdToman: null },
   ];
   renderSortableTable(document.getElementById("silverTable"), [
     { key:"name",  label:"آیتم",   render:r=>r.name },
@@ -565,6 +597,7 @@ function render(d, c, fetchedAt){
     { key:"changePct", label:"تغییر روزانه", numeric:true, render:r=>changeChip(r.changePct) },
     { key:"usd",   label:"دلار",   numeric:true, render:r=>fmtUsd(r.usd)+" $" },
     { key:"bubblePct", label:"حباب", numeric:true, render:r=>r.bubblePct==null?"—":changeChip(r.bubblePct) },
+    { key:"impliedUsdToman", label:"دلار محاسباتی", numeric:true, render:r=>r.impliedUsdToman==null?"—":fmtToman(r.impliedUsdToman)+" تومان" },
   ], silverRows);
 
   document.getElementById("fxTable").innerHTML = `
@@ -587,6 +620,7 @@ function render(d, c, fetchedAt){
     { key:"marketUsd", label:"معادل دلاری", numeric:true, render:r=>fmtUsd(r.marketUsd)+" $" },
     { key:"intrinsicToman", label:"ارزش ذاتی (تومان)", numeric:true, render:r=>fmtToman(r.intrinsicToman) },
     { key:"bubblePct", label:"حباب", numeric:true, render:r=>changeChip(r.bubblePct) },
+    { key:"impliedUsdToman", label:"دلار محاسباتی", numeric:true, render:r=>fmtToman(r.impliedUsdToman)+" تومان" },
   ], c.coins);
 
   const fundsIsToday = hoursAgo(d.freshness.funds) < 20;
