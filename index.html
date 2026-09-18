@@ -598,8 +598,6 @@ function render(d, c, fetchedAt){
 
   const goldRows = [
     { key:"g18", name:"گرم ۱۸ عیار (تهران)", toman: d.gram18Toman, usd: c.gram18Usd, worldUsd: c.worldGram24Usd*0.75,      changePct: d.changePct.gram18, impliedUsdToman: impliedDollarToman(d.usdToman, c.gram18BubblePct) },
-    { key:"g20", name:"گرم ۲۰ عیار",          toman: d.gram20Toman, usd: c.gram20Usd, worldUsd: c.worldGram24Usd*(20/24),   changePct: d.changePct.gram24, impliedUsdToman: impliedDollarToman(d.usdToman, c.gram20BubblePct) },
-    { key:"g21", name:"گرم ۲۱ عیار",          toman: d.gram21Toman, usd: c.gram21Usd, worldUsd: c.worldGram24Usd*(21/24),   changePct: d.changePct.gram24, impliedUsdToman: impliedDollarToman(d.usdToman, c.gram21BubblePct) },
     { key:"g24", name:"گرم ۲۴ عیار",          toman: d.gram24Toman, usd: c.gram24Usd, worldUsd: c.worldGram24Usd,           changePct: d.changePct.gram24, impliedUsdToman: impliedDollarToman(d.usdToman, c.gram24BubblePct) },
     { key:"meshgal", name:"مظنه تهران (مثقال)", toman: d.meshgalToman, usd: c.meshgalUsd, worldUsd: c.meshgalWorldUsd,      changePct: d.changePct.meshgal, impliedUsdToman: impliedDollarToman(d.usdToman, c.meshgalBubblePct) },
   ];
