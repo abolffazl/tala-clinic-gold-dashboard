@@ -319,6 +319,7 @@ const FUND_DEFS = [
 const FUND_NAV_PROXY = "https://tala-clinic-cors-proxy.abolfazldanesh.workers.dev/fund-nav/";
 const FUND_NAV_REFRESH_MS = 5 * 60 * 1000; // official NAV updates at most once/day, no need to poll fast
 let fundNavCache = {}; // rahavardId -> { redemption_price, date }
+let fundNavStatus = {}; // rahavardId -> "ok" | "failed" (set once a fetch has been attempted)
 
 function toNum(s){ return parseFloat(String(s).replace(/,/g,"").trim()); }
 function signedPct(row){
@@ -645,17 +646,21 @@ function render(d, c, fetchedAt){
     { key:"navToman", label:(fundsIsToday?'قیمت امروز':'قیمت آخرین روز کاری')+' (تومان)', numeric:true, render:r=>fmtToman(r.navToman) },
     { key:"navUsd", label:"قیمت دلاری", numeric:true, render:r=>fmtUsd(r.navUsd)+" $" },
     { key:"dayChangePct", label:"تغییر نسبت به روز کاری قبل", numeric:true, render:r=>changeChip(r.dayChangePct) },
-    { key:"redemptionToman", label:"NAV ابطال رسمی", numeric:true, render:r=>r.redemptionToman==null?"در حال دریافت…":fmtToman(r.redemptionToman) },
+    { key:"redemptionToman", label:"NAV ابطال رسمی", numeric:true, render:r=>r.redemptionToman!=null?fmtToman(r.redemptionToman):(fundNavStatus[r.rahavardId]==="failed"?"⚠ دریافت ناموفق":"در حال دریافت…") },
     { key:"nominalBubblePct", label:"حباب اسمی (نسبت به NAV)", numeric:true, render:r=>r.nominalBubblePct==null?"—":changeChip(r.nominalBubblePct) },
     { key:"impliedUsdToman", label:"دلار محاسباتی", numeric:true, render:r=>r.impliedUsdToman==null?"—":fmtToman(r.impliedUsdToman)+" تومان" },
     { key:"lowToman", label:(fundsIsToday?'بازه‌ی امروز':'بازه‌ی آخرین روز کاری')+' (کف–سقف)', numeric:true, render:r=>`${fmtToman(r.lowToman)} – ${fmtToman(r.highToman)}` },
   ], d.funds);
 
+  const navFailCount = d.funds.filter(f=>fundNavStatus[f.rahavardId]==="failed" && f.redemptionToman==null).length;
   const fundsHintEl = document.getElementById("fundsHint");
-  fundsHintEl.classList.toggle("stale", !fundsIsToday);
-  fundsHintEl.innerHTML = fundsIsToday
-    ? `آخرین قیمت پایانی: امروز، ${fmtFaDate(d.freshness.funds)}`
-    : `⚠ بورس امروز تعطیل بوده — قیمت‌ها و بازه‌ی زیر مربوط به <b>آخرین روز کاری (${fmtFaDate(d.freshness.funds)})</b> است، نه امروز. «تغییر» هم نسبت به روز کاری قبل از آن محاسبه شده.`;
+  fundsHintEl.classList.toggle("stale", !fundsIsToday || navFailCount>0);
+  const boursClosedMsg = fundsIsToday ? "" :
+    `⚠ بورس امروز تعطیل بوده — قیمت‌ها و بازه‌ی زیر مربوط به <b>آخرین روز کاری (${fmtFaDate(d.freshness.funds)})</b> است، نه امروز. «تغییر» هم نسبت به روز کاری قبل از آن محاسبه شده. `;
+  const navFailMsg = navFailCount>0 ?
+    `⚠ دریافت NAV رسمی برای ${navFailCount} صندوق از rahavard365.com ناموفق بود — حباب اسمی/دلار محاسباتی همان‌ها موقتاً در دسترس نیست، بقیه‌ی دیتا تحت تأثیر نیست. ` : "";
+  fundsHintEl.innerHTML = (boursClosedMsg + navFailMsg) ||
+    `آخرین قیمت پایانی: امروز، ${fmtFaDate(d.freshness.funds)}`;
 
   document.getElementById("updatedRow").textContent =
     `آخرین دریافت: ${fetchedAt.toLocaleTimeString("fa-IR")} — ${fetchedAt.toLocaleDateString("fa-IR-u-ca-persian",{day:"numeric",month:"long",year:"numeric"})}`;
@@ -689,10 +694,15 @@ async function refreshFundNav(){
     await Promise.all(FUND_DEFS.map(async f=>{
       try{
         const res = await fetch(FUND_NAV_PROXY + f.rahavardId, { cache: "no-store" });
-        if(!res.ok) return;
+        if(!res.ok) { fundNavStatus[f.rahavardId] = "failed"; return; }
         const json = await res.json();
-        if(json.redemption_price!=null) fundNavCache[f.rahavardId] = json;
-      }catch(e){ /* leave this fund's cache as-is on failure */ }
+        if(json.redemption_price!=null) {
+          fundNavCache[f.rahavardId] = json;
+          fundNavStatus[f.rahavardId] = "ok";
+        } else {
+          fundNavStatus[f.rahavardId] = "failed";
+        }
+      }catch(e){ fundNavStatus[f.rahavardId] = "failed"; /* keep any previously-cached value */ }
     }));
     if (lastMainData) {
       const d = parseData(lastMainData.json);
