@@ -354,6 +354,16 @@ function hoursAgo(ts){
   if (isNaN(d)) return Infinity;
   return (Date.now()-d.getTime())/3600000;
 }
+// Iran's bourse (IME/TSE, where these funds trade) is closed Thursday and
+// Friday every week, plus assorted official holidays. tgju keeps refreshing
+// its "ts" metadata even on closed days with no new trade, so a simple
+// hours-since-timestamp check can wrongly call a closed day "today". Use the
+// day of week (reliable) combined with a flat day-change (a fund shows
+// d=0/dp=0 when no new session traded) as the closed-market signal instead.
+function isTehranBourseWeekend(){
+  const weekday = new Date().toLocaleString("en-US", { timeZone: "Asia/Tehran", weekday: "short" });
+  return weekday === "Thu" || weekday === "Fri";
+}
 
 // ---- generic sortable table renderer ----
 // columns: [{key, label, numeric:bool, render(row)=>innerHTML}]
@@ -640,7 +650,9 @@ function render(d, c, fetchedAt){
     { key:"impliedUsdToman", label:"دلار محاسباتی", numeric:true, render:r=>fmtToman(r.impliedUsdToman)+" تومان" },
   ], c.coins);
 
-  const fundsIsToday = hoursAgo(d.freshness.funds) < 20;
+  const isWeekend = isTehranBourseWeekend();
+  const noSessionToday = d.funds.every(f=>f.dayChangePct===0);
+  const fundsIsToday = !isWeekend && !noSessionToday;
   renderSortableTable(document.getElementById("fundsTable"), [
     { key:"name", label:"صندوق", render:r=>r.name },
     { key:"navToman", label:(fundsIsToday?'قیمت امروز':'قیمت آخرین روز کاری')+' (تومان)', numeric:true, render:r=>fmtToman(r.navToman) },
@@ -655,8 +667,9 @@ function render(d, c, fetchedAt){
   const navFailCount = d.funds.filter(f=>fundNavStatus[f.rahavardId]==="failed" && f.redemptionToman==null).length;
   const fundsHintEl = document.getElementById("fundsHint");
   fundsHintEl.classList.toggle("stale", !fundsIsToday || navFailCount>0);
+  const closedReason = isWeekend ? "آخر هفته‌ی بورس (پنجشنبه/جمعه)" : "تعطیلی بورس";
   const boursClosedMsg = fundsIsToday ? "" :
-    `⚠ بورس امروز تعطیل بوده — قیمت‌ها و بازه‌ی زیر مربوط به <b>آخرین روز کاری (${fmtFaDate(d.freshness.funds)})</b> است، نه امروز. «تغییر» هم نسبت به روز کاری قبل از آن محاسبه شده. `;
+    `⚠ <b>امروز روز معاملاتی نبوده</b> (${closedReason}) — قیمت‌ها و بازه‌ی زیر مربوط به <b>آخرین روز کاری (${fmtFaDate(d.freshness.funds)})</b> است، نه امروز. «تغییر» هم نسبت به روز کاری قبل از آن محاسبه شده. `;
   const navFailMsg = navFailCount>0 ?
     `⚠ دریافت NAV رسمی برای ${navFailCount} صندوق از rahavard365.com ناموفق بود — حباب اسمی/دلار محاسباتی همان‌ها موقتاً در دسترس نیست، بقیه‌ی دیتا تحت تأثیر نیست. ` : "";
   fundsHintEl.innerHTML = (boursClosedMsg + navFailMsg) ||
@@ -681,8 +694,14 @@ function renderFlow(rows, fetchedAt){
     { key:"valueBn", label:"ارزش معاملات (میلیارد تومان)", numeric:true, render:r=>fmtToman(r.valueBn) },
     { key:"netFlowBn", label:"ورود/خروج پول خالص (میلیارد تومان)", numeric:true, render:r=>amountChip(r.netFlowBn) },
   ], rows);
-  document.getElementById("flowHint").textContent =
-    `منبع: tradersarena.ir · لحظه‌ای در روزهای کاری بورس · دریافت: ${fetchedAt.toLocaleTimeString("fa-IR")}`;
+  const flowHintEl = document.getElementById("flowHint");
+  if (isTehranBourseWeekend()) {
+    flowHintEl.classList.add("stale");
+    flowHintEl.innerHTML = `⚠ <b>امروز روز معاملاتی نبوده</b> (آخر هفته‌ی بورس) — این اعداد مربوط به آخرین روز کاری‌اند، نه امروز.`;
+  } else {
+    flowHintEl.classList.remove("stale");
+    flowHintEl.textContent = `منبع: tradersarena.ir · لحظه‌ای در روزهای کاری بورس · دریافت: ${fetchedAt.toLocaleTimeString("fa-IR")}`;
+  }
 }
 
 let fundNavInFlight = false;
