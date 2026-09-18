@@ -154,7 +154,7 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
       <div class="brand-mark">◈</div>
       <div class="brand-text">
         <h1>داشبورد زنده‌ی طلا، سکه و صندوق‌ها</h1>
-        <p>منبع داده: <a href="https://www.tgju.org/" target="_blank" rel="noopener">tgju.org</a> و <a href="https://tradersarena.ir/" target="_blank" rel="noopener">tradersarena.ir</a></p>
+        <p>منبع داده: <a href="https://www.tgju.org/" target="_blank" rel="noopener">tgju.org</a>، <a href="https://tradersarena.ir/" target="_blank" rel="noopener">tradersarena.ir</a> و <a href="https://rahavard365.com/" target="_blank" rel="noopener">rahavard365.com</a></p>
       </div>
     </div>
     <div class="status">
@@ -257,15 +257,16 @@ footer a{border-bottom:1px dashed var(--muted);text-decoration:none;}
         <li>نقره‌ی ۹۹۹ یعنی نقره‌ی خالص و ۹۲۵ یعنی نقره‌ی استرلینگ (۹۲٫۵٪ خالص)؛ حباب هر دو نسبت به قیمت جهانی هر گرم نقره (از روی انس) محاسبه می‌شود.</li>
         <li>«دلار طبق نرخ درهم» از ضرب قیمت درهم (تومان) در نرخ جهانی دلار/درهم به‌دست می‌آید؛ «دلار هرات» نرخ آزاد بازار افغانستان و «تتر» قیمت تومانی هر USDT است.</li>
         <li>«دلار محاسباتی» (کنار گرم/سکه/نقره) یعنی: اگر نرخ دلار واقعی به‌جای حبابِ فعلیِ همان قلم اعمال می‌شد، دلار باید چند تومان باشد — فرمول: نرخ دلار × (۱ + درصد حباب همان قلم). قلم‌های پرحباب‌تر، دلار محاسباتیِ بالاتری نشان می‌دهند.</li>
-        <li>«پیشنهاد تبدیل» فقط بین دارایی‌هایی که همین صفحه برایشان حباب/اسپرد قابل‌اتکا محاسبه می‌کند رتبه‌بندی می‌کند (سکه‌ها و کانال‌های دلار) — صندوق‌ها فعلاً چون NAV/ترکیب دارایی رسمی‌شان در دسترس نیست، در رتبه‌بندی نمی‌آیند.</li>
+        <li>«حباب اسمی» صندوق‌ها = اختلاف قیمت بازار با NAV ابطال رسمی (از rahavard365.com، هر چند دقیقه یک‌بار به‌روز می‌شود چون NAV رسمی معمولاً روزی یک‌بار منتشر می‌شود). این با «حباب واقعی» (نسبت به ارزش طلای فیزیکی پشتوانه‌ی صندوق) فرق دارد چون نیازمند ترکیب دقیق دارایی صندوق است.</li>
+        <li>«پیشنهاد تبدیل» فقط بین دارایی‌هایی که همین صفحه برایشان حباب/اسپرد قابل‌اتکا محاسبه می‌کند رتبه‌بندی می‌کند (سکه‌ها و کانال‌های دلار) — صندوق‌ها فعلاً در رتبه‌بندی نمی‌آیند.</li>
         <li>مقادیر tgju.org به ریال است و پیش از محاسبه بر ۱۰ تقسیم شده تا به تومان تبدیل شود. NAV صندوق‌ها فقط در روزهای کاری بورس تغییر می‌کند.</li>
       </ul>
       <div class="roadmap">
         <b>نقشه راه (فاز بعد)</b>
         <ul>
-          <li>محاسبه‌ی حباب دقیق و «دلار محاسباتی» هر صندوق به‌تفکیک (نیاز به NAV رسمی + ترکیب دارایی از fipiran.ir/codal.ir — این سایت‌ها فقط از داخل ایران در دسترس‌اند).</li>
+          <li>محاسبه‌ی «حباب واقعی» هر صندوق نسبت به ارزش طلای فیزیکی پشتوانه (نیاز به ترکیب دقیق دارایی — وزن سکه/شمش/نقدینگی — که فقط در گزارش‌های رسمی صندوق‌ها هست).</li>
           <li>جریان پول فعلاً فقط در سطح <b>کل صندوق‌های طلا/نقره روی هم</b> است (از tradersarena.ir) — تفکیک به ازای هر صندوق هنوز در دسترس نیست.</li>
-          <li>گسترش «پیشنهاد تبدیل» به صندوق‌ها، به‌محض این‌که حباب واقعی‌شان قابل‌محاسبه شود.</li>
+          <li>گسترش «پیشنهاد تبدیل» به صندوق‌ها، حالا که حباب اسمی‌شان در دسترس است.</li>
         </ul>
       </div>
     </div>
@@ -302,14 +303,22 @@ const COIN_DEFS = [
 ];
 
 const FUND_DEFS = [
-  { key:"ayar",    name:"عیار",         apiKey:"ime_fund_ayar" },
-  { key:"ganj",    name:"گنج",          apiKey:"ime_fund_ganj" },
-  { key:"mesghal", name:"صندوق مثقال",  apiKey:"ime_fund_mesghal" },
-  { key:"lotus",   name:"طلای لوتوس",   apiKey:"ime_fund_lotuss" },
-  { key:"alton",   name:"آلتون",        apiKey:"ime_fund_alton" },
-  { key:"atash",   name:"آتش",          apiKey:"ime_fund_atash" },
-  { key:"kahroba", name:"کهربا",        apiKey:"ime_fund_kahroba" },
+  { key:"ayar",    name:"عیار",         apiKey:"ime_fund_ayar",    rahavardId:4475 },
+  { key:"ganj",    name:"گنج",          apiKey:"ime_fund_ganj",    rahavardId:1595 },
+  { key:"mesghal", name:"صندوق مثقال",  apiKey:"ime_fund_mesghal", rahavardId:18235 },
+  { key:"lotus",   name:"طلای لوتوس",   apiKey:"ime_fund_lotuss",  rahavardId:2672 },
+  { key:"alton",   name:"آلتون",        apiKey:"ime_fund_alton",   rahavardId:22820 },
+  { key:"atash",   name:"آتش",          apiKey:"ime_fund_atash",   rahavardId:35953 },
+  { key:"kahroba", name:"کهربا",        apiKey:"ime_fund_kahroba", rahavardId:17480 },
 ];
+
+// Official redemption NAV per fund, proxied (for CORS) through a small
+// Cloudflare Worker in front of rahavard365.com's public asset API. Verified
+// against a user-supplied reference export: redemption_price matched their
+// "نرخ NAV ابطال" column exactly for every fund tested.
+const FUND_NAV_PROXY = "https://tala-clinic-cors-proxy.abolfazldanesh.workers.dev/fund-nav/";
+const FUND_NAV_REFRESH_MS = 5 * 60 * 1000; // official NAV updates at most once/day, no need to poll fast
+let fundNavCache = {}; // rahavardId -> { redemption_price, date }
 
 function toNum(s){ return parseFloat(String(s).replace(/,/g,"").trim()); }
 function signedPct(row){
@@ -435,6 +444,9 @@ function parseData(json){
   const funds = FUND_DEFS.map(f=>{
     const row = cur[f.apiKey];
     const navToman = toNum(row.p)/10;
+    const officialNav = fundNavCache[f.rahavardId];
+    const redemptionToman = officialNav ? officialNav.redemption_price/10 : null;
+    const nominalBubblePct = redemptionToman ? (navToman-redemptionToman)/redemptionToman*100 : null;
     return {
       ...f,
       navToman,
@@ -443,6 +455,10 @@ function parseData(json){
       lowToman: toNum(row.l)/10,
       dayChangePct: signedPct(row),
       ts: row.ts,
+      redemptionToman,
+      redemptionDate: officialNav ? officialNav.date : null,
+      nominalBubblePct,
+      impliedUsdToman: nominalBubblePct==null ? null : impliedDollarToman(usdToman, nominalBubblePct),
     };
   });
 
@@ -626,9 +642,12 @@ function render(d, c, fetchedAt){
   const fundsIsToday = hoursAgo(d.freshness.funds) < 20;
   renderSortableTable(document.getElementById("fundsTable"), [
     { key:"name", label:"صندوق", render:r=>r.name },
-    { key:"navToman", label:(fundsIsToday?'NAV امروز':'NAV آخرین روز کاری')+' (تومان)', numeric:true, render:r=>fmtToman(r.navToman) },
+    { key:"navToman", label:(fundsIsToday?'قیمت امروز':'قیمت آخرین روز کاری')+' (تومان)', numeric:true, render:r=>fmtToman(r.navToman) },
     { key:"navUsd", label:"قیمت دلاری", numeric:true, render:r=>fmtUsd(r.navUsd)+" $" },
     { key:"dayChangePct", label:"تغییر نسبت به روز کاری قبل", numeric:true, render:r=>changeChip(r.dayChangePct) },
+    { key:"redemptionToman", label:"NAV ابطال رسمی", numeric:true, render:r=>r.redemptionToman==null?"در حال دریافت…":fmtToman(r.redemptionToman) },
+    { key:"nominalBubblePct", label:"حباب اسمی (نسبت به NAV)", numeric:true, render:r=>r.nominalBubblePct==null?"—":changeChip(r.nominalBubblePct) },
+    { key:"impliedUsdToman", label:"دلار محاسباتی", numeric:true, render:r=>r.impliedUsdToman==null?"—":fmtToman(r.impliedUsdToman)+" تومان" },
     { key:"lowToman", label:(fundsIsToday?'بازه‌ی امروز':'بازه‌ی آخرین روز کاری')+' (کف–سقف)', numeric:true, render:r=>`${fmtToman(r.lowToman)} – ${fmtToman(r.highToman)}` },
   ], d.funds);
 
@@ -659,6 +678,29 @@ function renderFlow(rows, fetchedAt){
   ], rows);
   document.getElementById("flowHint").textContent =
     `منبع: tradersarena.ir · لحظه‌ای در روزهای کاری بورس · دریافت: ${fetchedAt.toLocaleTimeString("fa-IR")}`;
+}
+
+let fundNavInFlight = false;
+let lastMainData = null; // cache of the last successful tgju parse, so we can re-render when NAV lands
+async function refreshFundNav(){
+  if (fundNavInFlight) return;
+  fundNavInFlight = true;
+  try{
+    await Promise.all(FUND_DEFS.map(async f=>{
+      try{
+        const res = await fetch(FUND_NAV_PROXY + f.rahavardId, { cache: "no-store" });
+        if(!res.ok) return;
+        const json = await res.json();
+        if(json.redemption_price!=null) fundNavCache[f.rahavardId] = json;
+      }catch(e){ /* leave this fund's cache as-is on failure */ }
+    }));
+    if (lastMainData) {
+      const d = parseData(lastMainData.json);
+      render(d, compute(d), lastMainData.fetchedAt);
+    }
+  } finally {
+    fundNavInFlight = false;
+  }
 }
 
 let flowInFlight = false;
@@ -705,9 +747,11 @@ async function refresh(){
     const res = await fetch(API_URL, { cache: "no-store" });
     if (!res.ok) throw new Error("HTTP " + res.status);
     const json = await res.json();
+    const fetchedAt = new Date();
+    lastMainData = { json, fetchedAt };
     const d = parseData(json);
     const c = compute(d);
-    render(d, c, new Date());
+    render(d, c, fetchedAt);
     clearError();
   }catch(err){
     showError("دریافت داده از tgju.org ناموفق بود (" + err.message + "). آخرین داده‌ی موجود همچنان نمایش داده می‌شود. چند لحظه دیگر دوباره امتحان می‌شود.");
@@ -721,7 +765,7 @@ async function manualRefresh(){
   refreshBtn.disabled = true;
   refreshBtn.classList.remove("done");
   refreshBtn.textContent = "در حال دریافت…";
-  await Promise.all([refresh(), refreshFlow()]);
+  await Promise.all([refresh(), refreshFlow(), refreshFundNav()]);
   refreshBtn.textContent = "به‌روز شد ✓";
   refreshBtn.classList.add("done");
   setTimeout(()=>{
@@ -733,8 +777,10 @@ async function manualRefresh(){
 refreshBtn.addEventListener("click", manualRefresh);
 refresh();
 refreshFlow();
+refreshFundNav();
 setInterval(refresh, REFRESH_MS);
 setInterval(refreshFlow, REFRESH_MS);
+setInterval(refreshFundNav, FUND_NAV_REFRESH_MS);
 </script>
 </body>
 </html>
