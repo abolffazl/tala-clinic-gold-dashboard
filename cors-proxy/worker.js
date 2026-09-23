@@ -15,7 +15,7 @@
 
 const UPSTREAM = "https://rahavard365.com";
 const ALLOWED_PREFIXES = ["/api/v2/market-data/", "/api/v2/asset/"];
-const CACHE_TTL_SECONDS = 180;
+const CACHE_TTL_SECONDS = 20; // NAV and trade price both move intraday — keep this short
 
 function corsHeaders() {
   return {
@@ -60,6 +60,7 @@ export default {
       const json = await res.json();
       const asset = json?.data?.asset || {};
       const fv = (json?.data?.fund_values || [])[0] || {};
+      const lt = json?.data?.last_trade || {};
       const body = {
         asset_id: asset.id ?? id,
         name: asset.name ?? null,
@@ -68,6 +69,13 @@ export default {
         redemption_price: fv.redemption_price ?? null,
         bid_price: fv.bid_price ?? null,
         units: fv.units ?? null,
+        // live market trade from the same response/moment as the NAV above,
+        // so bubble = price vs NAV is never computed across mismatched times
+        last_price: lt.real_close_price ?? null,
+        last_change_percent: lt.real_close_price_change_percent ?? null,
+        low_price: lt.low_price ?? null,
+        high_price: lt.high_price ?? null,
+        last_trade_time: lt.end_date_time ?? null,
       };
       const response = new Response(JSON.stringify(body), {
         headers: {

@@ -317,7 +317,7 @@ const FUND_DEFS = [
 // against a user-supplied reference export: redemption_price matched their
 // "نرخ NAV ابطال" column exactly for every fund tested.
 const FUND_NAV_PROXY = "https://tala-clinic-cors-proxy.abolfazldanesh.workers.dev/fund-nav/";
-const FUND_NAV_REFRESH_MS = 5 * 60 * 1000; // official NAV updates at most once/day, no need to poll fast
+const FUND_NAV_REFRESH_MS = 45000; // NAV and fund trade price both move intraday
 let fundNavCache = {}; // rahavardId -> { redemption_price, date }
 let fundNavStatus = {}; // rahavardId -> "ok" | "failed" (set once a fetch has been attempted)
 
@@ -452,19 +452,26 @@ function parseData(json){
     { name:"تتر (USDT)",              toman: tetherToman, ts: cur["crypto-tether-irr"].ts },
   ];
 
+  // Prefer Rahavard for the fund's market price: it comes in the same
+  // response as the NAV, so bubble = price vs NAV is computed from one
+  // moment. tgju's fund prices lag Rahavard by up to ~1 hour intraday, and
+  // mixing the two produced wrong bubbles. tgju is only a fallback.
   const funds = FUND_DEFS.map(f=>{
     const row = cur[f.apiKey];
-    const navToman = toNum(row.p)/10;
     const officialNav = fundNavCache[f.rahavardId];
+    const fromRahavard = officialNav && officialNav.last_price != null;
+    const navToman = fromRahavard ? officialNav.last_price/10 : toNum(row.p)/10;
     const redemptionToman = officialNav ? officialNav.redemption_price/10 : null;
     const nominalBubblePct = redemptionToman ? (navToman-redemptionToman)/redemptionToman*100 : null;
     return {
       ...f,
       navToman,
       navUsd: navToman/usdToman,
-      highToman: toNum(row.h)/10,
-      lowToman: toNum(row.l)/10,
-      dayChangePct: signedPct(row),
+      priceSource: fromRahavard ? "rahavard" : "tgju",
+      highToman: fromRahavard ? officialNav.high_price/10 : toNum(row.h)/10,
+      lowToman: fromRahavard ? officialNav.low_price/10 : toNum(row.l)/10,
+      dayChangePct: fromRahavard ? (officialNav.last_change_percent||0)*100 : signedPct(row),
+      lastTradeTime: fromRahavard ? officialNav.last_trade_time : null,
       ts: row.ts,
       redemptionToman,
       redemptionDate: officialNav ? officialNav.date : null,
@@ -650,8 +657,16 @@ function render(d, c, fetchedAt){
   ], c.coins);
 
   const isWeekend = isTehranBourseWeekend();
-  const noSessionToday = d.funds.every(f=>f.dayChangePct===0);
+  const tehranDate = t => new Date(t).toLocaleDateString("en-CA",{timeZone:"Asia/Tehran"});
+  const todayTehran = tehranDate(Date.now());
+  const tradeTimes = d.funds.map(f=>f.lastTradeTime).filter(Boolean);
+  // Rahavard's last_trade time is a real trade timestamp (unlike tgju's ts,
+  // which refreshes even on closed days), so if we have it, trust it.
+  const noSessionToday = tradeTimes.length
+    ? tradeTimes.every(t=>tehranDate(t)!==todayTehran)
+    : d.funds.every(f=>f.dayChangePct===0);
   const fundsIsToday = !isWeekend && !noSessionToday;
+  const latestTrade = tradeTimes.sort().slice(-1)[0];
   renderSortableTable(document.getElementById("fundsTable"), [
     { key:"name", label:"صندوق", render:r=>r.name },
     { key:"navToman", label:(fundsIsToday?'قیمت امروز':'قیمت آخرین روز کاری')+' (تومان)', numeric:true, render:r=>fmtToman(r.navToman) },
@@ -666,13 +681,16 @@ function render(d, c, fetchedAt){
   const navFailCount = d.funds.filter(f=>fundNavStatus[f.rahavardId]==="failed" && f.redemptionToman==null).length;
   const fundsHintEl = document.getElementById("fundsHint");
   fundsHintEl.classList.toggle("stale", !fundsIsToday || navFailCount>0);
+  const fundsTimeLabel = latestTrade
+    ? new Date(latestTrade).toLocaleString("fa-IR-u-ca-persian",{timeZone:"Asia/Tehran",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})
+    : fmtFaDate(d.freshness.funds);
   const closedReason = isWeekend ? "آخر هفته‌ی بورس (پنجشنبه/جمعه)" : "تعطیلی بورس";
   const boursClosedMsg = fundsIsToday ? "" :
-    `⚠ <b>امروز روز معاملاتی نبوده</b> (${closedReason}) — قیمت‌ها و بازه‌ی زیر مربوط به <b>آخرین روز کاری (${fmtFaDate(d.freshness.funds)})</b> است، نه امروز. «تغییر» هم نسبت به روز کاری قبل از آن محاسبه شده. `;
+    `⚠ <b>امروز روز معاملاتی نبوده</b> (${closedReason}) — قیمت‌ها و بازه‌ی زیر مربوط به <b>آخرین روز کاری (${fundsTimeLabel})</b> است، نه امروز. «تغییر» هم نسبت به روز کاری قبل از آن محاسبه شده. `;
   const navFailMsg = navFailCount>0 ?
     `⚠ دریافت NAV رسمی برای ${navFailCount} صندوق از rahavard365.com ناموفق بود — حباب اسمی/دلار محاسباتی همان‌ها موقتاً در دسترس نیست، بقیه‌ی دیتا تحت تأثیر نیست. ` : "";
   fundsHintEl.innerHTML = (boursClosedMsg + navFailMsg) ||
-    `آخرین قیمت پایانی: امروز، ${fmtFaDate(d.freshness.funds)}`;
+    `آخرین معامله: امروز، ${fundsTimeLabel} · قیمت و NAV هر دو از rahavard365.com (هم‌زمان)`;
 
   document.getElementById("updatedRow").textContent =
     `آخرین دریافت: ${fetchedAt.toLocaleTimeString("fa-IR")} — ${fetchedAt.toLocaleDateString("fa-IR-u-ca-persian",{day:"numeric",month:"long",year:"numeric"})}`;
